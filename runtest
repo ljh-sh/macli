@@ -1,0 +1,145 @@
+#!/bin/bash
+# runtest - macli test driver
+# Usage: ./runtest [test_name] or ./runtest [category/test_name]
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+TEST_DIR="$SCRIPT_DIR/.x-cmd/test"
+BUILD_DIR="$SCRIPT_DIR/.build/release"
+BIN="$BUILD_DIR/macli"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+PASSES=0
+FAILS=0
+CURRENT_CATEGORY=""
+
+pass() { ((PASSES++)); echo -e "  ${GREEN}PASS${NC}: $1"; }
+fail() { ((FAILS++)); echo -e "  ${RED}FAIL${NC}: $1"; }
+info() { echo -e "  ${BLUE}INFO${NC}: $1"; }
+section() { echo -e "\n${YELLOW}=== $1 ===${NC}"; }
+
+build() {
+    section "Building"
+    swift build -c release 2>&1 | grep -E "(Build|error)" || true
+    if [[ -f "$BIN" ]]; then
+        pass "Build successful"
+        return 0
+    else
+        fail "Build failed"
+        return 1
+    fi
+}
+
+get_category() {
+    local file="$1"
+    local rel_path="${file#$TEST_DIR/}"
+    local dir=$(dirname "$rel_path")
+    if [[ "$dir" == "." ]]; then
+        head -2 "$file" | grep "^# " | sed 's/# //'
+    else
+        echo "$dir"
+    fi
+}
+
+run_test() {
+    local test_file="$1"
+    local test_name=$(basename "$test_file" .sh)
+    local category=$(get_category "$test_file")
+    
+    if [[ "$category" != "$CURRENT_CATEGORY" ]]; then
+        CURRENT_CATEGORY="$category"
+        echo ""
+        echo -e "${CYAN}[$category]${NC}"
+    fi
+    
+    source "$test_file"
+}
+
+find_test() {
+    local name="$1"
+    
+    # Direct path with category
+    if [[ -f "$TEST_DIR/$name.sh" ]]; then
+        echo "$TEST_DIR/$name.sh"
+        return
+    fi
+    
+    # Search in subdirectories
+    for dir in "$TEST_DIR"/*/; do
+        if [[ -f "$dir$name.sh" ]]; then
+            echo "$dir$name.sh"
+            return
+        fi
+    done
+}
+
+list_tests() {
+    echo "Available tests:"
+    echo ""
+    for dir in "$TEST_DIR"/*/; do
+        if [[ -d "$dir" ]]; then
+            local cat=$(basename "$dir")
+            echo "  [$cat]"
+            for test_file in "$dir"*.sh; do
+                if [[ -f "$test_file" ]]; then
+                    local name=$(basename "$test_file" .sh)
+                    echo "    $name"
+                fi
+            done
+        fi
+    done
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "Usage: ./runtest [test_name]"
+    echo ""
+    list_tests
+    exit 0
+fi
+
+if ! build; then
+    exit 1
+fi
+
+if [[ -n "$1" ]]; then
+    test_file=$(find_test "$1")
+    if [[ -n "$test_file" ]]; then
+        section "Running: $1"
+        source "$test_file"
+    else
+        echo "Test not found: $1"
+        echo ""
+        list_tests
+        exit 1
+    fi
+else
+    section "Running All Tests"
+    for dir in "$TEST_DIR"/*/; do
+        if [[ -d "$dir" ]]; then
+            for test_file in "$dir"*.sh; do
+                if [[ -f "$test_file" ]]; then
+                    run_test "$test_file"
+                fi
+            done
+        fi
+    done
+fi
+
+section "Summary"
+echo "  Passed: $PASSES"
+echo "  Failed: $FAILS"
+
+if [[ $FAILS -gt 0 ]]; then
+    echo -e "\n${RED}SOME TESTS FAILED${NC}"
+    exit 1
+else
+    echo -e "\n${GREEN}ALL TESTS PASSED${NC}"
+    exit 0
+fi

@@ -1,0 +1,4 @@
+module HidSensorObjC {
+    header "HidSensorClient.h"
+    export *
+}
