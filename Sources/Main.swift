@@ -22,8 +22,6 @@ enum MacliRoot: Cmd {
             "event": EventCmd.self,
             "reminder": ReminderCmd.self,
             "aka": AkaCmd.self,
-            "map": MapCmd.self,
-            "location": LocationCmd.self,
             "notify": NotifyCmd.self,
             "speech": SpeechCmd.self,
             "speak": SpeakCmd.self,
