@@ -110,12 +110,41 @@ build_all_targets() {
 $(get_targets)
 EOF
 
+    # Build universal binary (arm64 + x86_64 in single Mach-O)
+    build_universal
+
     write_build_info
 
     echo ""
     echo "Done! Artifacts in: $OUT_DIR"
     echo ""
     ls -la "$OUT_DIR"/*/bin/ 2>/dev/null || true
+    ls -la "$OUT_DIR"/*universal*/bin/ 2>/dev/null || true
+}
+
+build_universal() {
+    local bin_name="${BIN_NAME:-macli}"
+    local arm64_bin="$OUT_DIR/darwin-arm64/bin/${bin_name}"
+    local x64_bin="$OUT_DIR/darwin-x64/bin/${bin_name}"
+    local uni_dir="$OUT_DIR/darwin-universal/bin"
+    local uni_bin="$uni_dir/${bin_name}"
+
+    if [ ! -f "$arm64_bin" ] || [ ! -f "$x64_bin" ]; then
+        echo "  Skipping universal (need both arches)"
+        return 0
+    fi
+
+    mkdir -p "$uni_dir"
+
+    # lipo merges two thin binaries into one fat Mach-O
+    lipo -create "$arm64_bin" "$x64_bin" -output "$uni_bin"
+    chmod +x "$uni_bin"
+
+    # Re-sign (signature from thin binaries doesn't survive lipo)
+    codesign -f -s - "$uni_bin" 2>/dev/null || true
+
+    local size=$(stat -f%z "$uni_bin" 2>/dev/null || stat -c%s "$uni_bin" 2>/dev/null || echo "unknown")
+    echo "  -> $uni_bin ($size bytes, universal)"
 }
 
 package_target() {
@@ -157,6 +186,9 @@ package_all_targets() {
     done <<EOF
 $(get_targets)
 EOF
+
+    # Universal binary package
+    package_target "universal"
 
     # SHA256SUMS
     (cd "$OUT_DIR" && shasum -a 256 macli-*.tar.xz BUILD_INFO.txt > SHA256SUMS 2>/dev/null || true)
