@@ -1,0 +1,75 @@
+# scope.rule.yml — Direction A scope boundaries
+#
+# macli 只做 Python / shell 做不到的事。这条 rule 集合守住边界。
+# 详细背景见 macli-mneme/AGENTS.md。
+
+# ============================================================
+# Section: Scope boundary — 加新功能前必过的自检
+# ============================================================
+
+MCL-scope-010:
+  name: new-subcmd-must-fail-self-check
+  apply: Sources/cli/, Sources/Main.swift
+  level: error
+  desc:
+    - 任何新增 subcommand 必须过 AGENTS.md "自检清单" 的全否判定：系统 CLI 不能做 / PyObjC 不能干净 wrap / osascript 不能做或不高效 / 不只是其他保留功能的依赖或内部 IO 通道。
+    - 如果系统 CLI（pmset / system_profiler / defaults / networksetup / say / ioreg / airport / wdutil...）已经能做，且只需要单次或低频调用，禁止进 macli。归到 x-bash/mac。
+    - 历史反面案例：map / location（PyObjC 能 wrap），已移除。代码归档在 macli-mneme/story/260616.map-location-removed/。
+    - 决策前必须查 macli-mneme 的 roadmap-analysis story 和现有 x-bash/* 模块。
+
+MCL-scope-020:
+  name: registry-must-list-all-subcmds
+  apply: Sources/Main.swift
+  level: error
+  desc:
+    - Main.swift 的 MacliRoot.subcmds 字典里每个 entry 都必须有对应的 Cmd enum 定义在某一个 cli/*.swift 文件里。
+    - 不允许"孤儿"注册（注册了但没定义）。
+    - 反向（有定义但没注册）不检查 —— 因为一个 cli/*.swift 文件可以含多个 Cmd enum（嵌套子命令，如 Smc.swift 含 SmcCmd / Smc86Cmd / SmcHidTemp 等）。
+  testcase:
+    no-orphan-registration:
+      sh: |
+        # 提取 Main.swift 里注册的 Cmd 名（如 CalCmd）
+        registered=$(grep -oE ': [A-Z][a-zA-Z]*Cmd\.self' Sources/Main.swift | sed -E 's/: ([A-Z][a-zA-Z]*Cmd)\.self/\1/' | sort -u)
+        # 提取 cli/*.swift 里所有 enum 定义
+        defined=$(grep -hE '^enum [A-Z][a-zA-Z]*Cmd' Sources/cli/*.swift | sed -E 's/^enum ([A-Z][a-zA-Z]*Cmd).*/\1/' | sort -u)
+        # 每个 registered 必须在 defined 里
+        rc=0
+        while read -r name; do
+          if ! echo "$defined" | grep -qxF "$name"; then
+            echo "ORPHAN: $name registered in Main.swift but not defined"
+            rc=1
+          fi
+        done <<< "$registered"
+        exit $rc
+
+# ============================================================
+# Section: smc86 sunset — Intel-only, do not extend
+# ============================================================
+
+MCL-scope-030:
+  name: smc86-is-intel-only-do-not-extend
+  apply: Sources/ctrl/SmcCtrl.swift, Sources/cli/Smc.swift (smc86 subcmd only)
+  level: error
+  desc:
+    - SmcCtrl.swift 是 Intel x86 Mac 专用。用 IOServiceMatching("AppleSMC") + Intel SMC key namespace（FNum / F0Ac / BatCycle 等）。
+    - 不要在 SmcCtrl 里添加 Apple Silicon 的 fan / power / battery 实现。Apple Silicon 的同类功能必须走 HID 路径（HidSensorCtrl / HidSensorClient.m）。
+    - smc86 在 Intel Mac 完全 EOL 后整体移除（独立议题）。
+    - 实测：smc86 在 Apple Silicon 上能 open AppleSMC IOService 但 key namespace 清空（FNum 返回 nil）—— 这是设计，不是 bug。
+
+# ============================================================
+# Section: PyObjC / shell 可替代的不进 macli
+# ============================================================
+
+MCL-scope-040:
+  name: check-existing-x-bash-modules-before-adding
+  apply: Sources/
+  level: warn
+  desc:
+    - 加新功能前，先查 x-bash/* 系列模块是否已有实现：
+      - x-bash/gpu（Metal + IOKit GPU 信息）
+      - x-bash/cpu（sysctl + pmgr）
+      - x-bash/display（CoreDisplay 亮度）
+      - x-bash/mac（主脚本模块）
+      - x-cmd/x0/mod/{wifi,hw,usb,display,...}
+    - 如果某 x-bash 模块用 ctypes 艰难 hack 私有 API（lib/py/*.py 里有 ctypes + objc_msgSend），那才是 macli 接手的信号。
+    - 仅"Python 写起来啰嗦"不是理由。Metal device caps 这类公开稳定 API 不该用"OS 升级会坏"当进 macli 的借口。

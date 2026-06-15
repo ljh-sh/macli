@@ -1,0 +1,108 @@
+# release.rule.yml — 二进制去本地化 + 可复现构建
+#
+# Release 产物必须去本地化（privacy 优先），可复现是副产物。
+# 详细背景见 macli-mneme/issues/2。
+
+# ============================================================
+# Section: 去本地化（privacy）
+# ============================================================
+
+MCL-rel-010:
+  name: binary-no-build-machine-rpath
+  apply: .x-cmd/release.common.sh, .x-cmd/release
+  level: error
+  desc:
+    - Release 二进制的 LC_RPATH 必须不含 /Library/Developer/* 这类构建机特定路径。
+    - 默认 swift build 会嵌入 /Library/Developer/CommandLineTools/usr/lib/swift-X.Y/macosx 作为 RPATH。
+    - post-build 必须用 install_name_tool -delete_rpath <path> "$dst" 清除。
+    - RPATH 不直接含 username，但暴露构建机 Swift runtime 版本 + CLT 路径，破坏 reproducibility。
+  testcase:
+    no-build-machine-rpath:
+      sh: |
+        BIN="${BIN:-.release-artifacts/darwin-arm64/bin/macli}"
+        if [ ! -f "$BIN" ]; then echo "skip: binary not built"; exit 0; fi
+        if otool -l "$BIN" | grep -A2 "LC_RPATH" | grep -q "/Library/Developer"; then
+          echo "FAIL: build-machine RPATH leaked"
+          otool -l "$BIN" | grep -A2 "LC_RPATH" | grep "/Library/Developer"
+          exit 1
+        fi
+
+MCL-rel-020:
+  name: binary-no-user-path
+  apply: .x-cmd/release.common.sh
+  level: error
+  desc:
+    - Release 二进制里 strings 输出不允许出现 /Users/ 或 /home/ 开头的路径。
+    - 这些路径暴露构建者的 home 目录结构，是直接隐私泄漏。
+    - release 模式默认剥离 debug info，但加 -Xswiftc -gnone 是双保险。
+  testcase:
+    no-user-path-in-binary:
+      sh: |
+        BIN="${BIN:-.release-artifacts/darwin-arm64/bin/macli}"
+        if [ ! -f "$BIN" ]; then echo "skip: binary not built"; exit 0; fi
+        if strings "$BIN" | grep -qE "^/Users/|^/home/"; then
+          echo "FAIL: user path leaked in binary"
+          strings "$BIN" | grep -E "^/Users/|^/home/" | head -5
+          exit 1
+        fi
+
+# ============================================================
+# Section: 可复现（reproducibility，副产物）
+# ============================================================
+
+MCL-rel-030:
+  name: release-script-sets-deterministic-env
+  apply: .x-cmd/release.common.sh
+  level: warn
+  desc:
+    - .x-cmd/release.common.sh 的 do_build 必须设置确定性环境变量：
+      - `SOURCE_DATE_EPOCH=1700000000`
+      - `ZERO_AR_DATE=1`
+      - `TZ=UTC`
+      - `LC_ALL=C`
+    - swift build 命令必须带 -Xswiftc -gnone（关闭 debug info）。
+    - post-build 必须执行 codesign --remove-signature + strip -x。
+    - 目标：本机连续两次 release，sha256 完全一致。
+    - 不要求跨 toolchain/SDK 一致（不可能也不追）。
+  testcase:
+    env-vars-present:
+      sh: |
+        grep -q 'SOURCE_DATE_EPOCH' .x-cmd/release.common.sh
+        grep -q 'ZERO_AR_DATE' .x-cmd/release.common.sh
+        grep -q 'Xswiftc -gnone' .x-cmd/release.common.sh
+
+MCL-rel-040:
+  name: build-info-captured
+  apply: .x-cmd/release.common.sh
+  level: info
+  desc:
+    - Release 时生成 .release-artifacts/BUILD_INFO.txt，记录工具链指纹：
+      `swift --version` / `xcrun --show-sdk-version` / `xcrun --show-sdk-path` / `sw_vers` / `xcode-select -p`。
+    - BUILD_INFO 不嵌入二进制，作为旁路验证材料。
+    - 用户复现 release 时对比 BUILD_INFO 判断 toolchain 是否一致。
+
+# ============================================================
+# Section: 测试覆盖（与 .x-cmd/test/ 联动）
+# ============================================================
+
+MCL-rel-050:
+  name: binary-size-under-700kb
+  apply: .release-artifacts/, .x-cmd/test/build/size.sh
+  level: warn
+  desc:
+    - Release 二进制单架构 < 700 KB（参考 .x-cmd/test/build/size.sh）。
+    - 当前实测：arm64 ~530 KB / x86_64 ~535 KB（移除 map/location 之后）。
+    - 超过 700KB 说明引入了不必要依赖，需要检查。
+  testcase:
+    size-check:
+      sh: |
+        BIN="${BIN:-.release-artifacts/darwin-arm64/bin/macli}"
+        if [ ! -f "$BIN" ]; then echo "skip: binary not built"; exit 0; fi
+        SIZE=$(stat -f%z "$BIN")
+        SIZE_KB=$((SIZE / 1024))
+        if [ "$SIZE_KB" -lt 700 ]; then
+          echo "OK: ${SIZE_KB}KB"
+        else
+          echo "FAIL: ${SIZE_KB}KB > 700KB"
+          exit 1
+        fi

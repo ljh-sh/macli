@@ -1,0 +1,72 @@
+# output.rule.yml — 输出格式一致性
+#
+# 所有 macli 子命令的输出必须遵循统一约定，让下游 jq / awk / cut 能稳定消费。
+
+# ============================================================
+# Section: JSON schema
+# ============================================================
+
+MCL-out-010:
+  name: json-output-has-ok-field
+  apply: Sources/ctrl/, Sources/cli/
+  level: error
+  desc:
+    - 所有 JSON 输出必须含顶层 "ok": bool 字段。成功 true，失败 false。
+    - 失败时额外含 "error": <string>。
+    - 下游脚本可以 jq .ok / jq -e '.ok == true' 做分支。
+  testcase:
+    smc-has-ok:
+      sh: macli smc all 2>/dev/null | jq -e '.ok == true' >/dev/null
+    smc-temp-tsv-then-json:
+      sh: macli smc temp --json 2>/dev/null | jq -e 'has("ok")' >/dev/null
+
+MCL-out-020:
+  name: errors-have-actionable-context
+  apply: Sources/ctrl/AccessCtrl.swift, Sources/ctrl/*Ctrl.swift
+  level: warn
+  desc:
+    - '权限/失败错误理想 schema: {"ok": false, "error": "...", "permission": "Calendars", "hint": "...", "grant_url": "x-apple.systempreferences:..."}。'
+    - 当前部分 ctrl 只给 error 字符串，缺 grant_url。issue #6 落地后这条 level 升为 error。
+    - 至少保证 error 字符串里含可操作的指引（如 Grant in System Settings）。
+
+# ============================================================
+# Section: Streaming output (monitor / watch)
+# ============================================================
+
+MCL-out-030:
+  name: streaming-output-is-tsv-not-json
+  apply: Sources/cli/Monitor.swift (future), Sources/ctrl/Monitor*.swift (future)
+  level: error
+  desc:
+    - 任何"流式 / 循环 / 监控"型命令（如 macli monitor）必须输出 TSV，不是 JSON。
+    - 第一行 header（含列名），其后每行一个样本。
+    - 下游 awk -F'\t' 可以直接消费；jq 不适合流式。
+    - JSON 留给单次快照命令（如 macli smc all、macli battery）。
+    - 反例：macli monitor | jq ... 在循环里每行 parse JSON 整体，效率爆炸。
+
+MCL-out-040:
+  name: tsv-output-supports-flag
+  apply: Sources/cli/Smc.swift, Sources/cli/Smc86.swift
+  level: warn
+  desc:
+    - 现有 macli smc temp / macli smc volt 等快照命令默认 JSON，但必须支持 --tsv 切换。
+    - TSV 第一行 header。下游 awk 能直接处理。
+    - 新增的快照命令（battery / ssd）也要遵守这个 dual-output 约定。
+  testcase:
+    smc-temp-tsv-header:
+      sh: |
+        out=$(macli smc temp --tsv 2>/dev/null | head -1)
+        echo "$out" | grep -q $'name\tvalue\tunit'
+
+# ============================================================
+# Section: TTY-aware color
+# ============================================================
+
+MCL-out-050:
+  name: no-color-when-stdout-not-tty
+  apply: Sources/x-cmd/Log.swift, Sources/
+  level: warn
+  desc:
+    - 当 stdout 不是 TTY 时，禁止输出 ANSI 颜色转义。
+    - 下游 macli smc all | jq 时颜色码会污染 JSON。
+    - 日志（stderr）可以有颜色（不影响 stdout pipe）。
