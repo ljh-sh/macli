@@ -54,6 +54,7 @@ jobs:
           path: |
             .release-artifacts/macli-darwin-arm64.tar.xz
             .release-artifacts/macli-darwin-x64.tar.xz
+            .release-artifacts/macli-darwin-universal.tar.xz
             .release-artifacts/BUILD_INFO.txt
             .release-artifacts/SHA256SUMS
 
@@ -91,5 +92,6 @@ jobs:
           files: |
             artifacts/macli-darwin-arm64.tar.xz
             artifacts/macli-darwin-x64.tar.xz
+            artifacts/macli-darwin-universal.tar.xz
             artifacts/SHA256SUMS
             artifacts/BUILD_INFO.txt
