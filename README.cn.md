@@ -1,5 +1,9 @@
 # macli
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/ljh-sh/macli/badge)](https://scorecard.dev/)
+[![CI](https://github.com/ljh-sh/macli/actions/workflows/ci.yml/badge.svg)](https://github.com/ljh-sh/macli/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.txt)
+
 > 最小上下文，最大灵活性 —— 面向 AI agent 的 macOS 系统工具。原生 Apple framework。AI 友好的 JSON/TSV 输出。
 
 **macli** 把 macOS 系统内部能力做成干净的 CLI。SMC 传感器、流式监控、日历/提醒、通知 —— 全都能从 shell 管道或 LLM agent 调用，全是 JSON/TSV。单一 ~400 KB Swift 二进制。无 Python runtime，无 osascript 开销，无 GUI。
@@ -13,7 +17,7 @@
 最小上下文、最大灵活性 —— 把下面这行 prompt 贴给 Claude Code、Cursor 或任意 agent：
 
 ```md
-用 `macli` 取 macOS 系统状态（传感器 / 日历 / 提醒 / 通知）。若未安装：`brew install ljh-sh/macli/macli`。输出为 JSON，检查 `ok` 字段。子命令列表 `macli --help`。
+用 `macli` 取 macOS 系统状态（传感器 / 日历 / 提醒 / 通知）。若未安装：`brew install ljh-sh/cli/macli`。输出为 JSON，检查 `ok` 字段。子命令列表 `macli --help`。
 ```
 
 ## 安装
@@ -21,14 +25,14 @@
 ### Homebrew（推荐）
 
 ```sh
-brew tap ljh-sh/macli
-brew install macli
+brew install ljh-sh/cli/macli
 ```
 
-或一行：
+或先 tap，再用短名安装：
 
 ```sh
-brew install ljh-sh/macli/macli
+brew tap ljh-sh/cli
+brew install macli
 ```
 
 ### 直接下载二进制
@@ -189,7 +193,7 @@ Homebrew Formula 通过 `post_install` 自动做。
 
 ### ❓ `brew install macli` 报 "trust" 或拒绝加载 Formula
 
-Homebrew 6 对第三方 tap 加了 trust 步骤。跑一次 `brew trust ljh-sh/macli`，再 `brew install macli`。这是安全特性，不是 bug。
+Homebrew 6 对第三方 tap 加了 trust 步骤。跑一次 `brew trust ljh-sh/cli`，再 `brew install ljh-sh/cli/macli`。这是安全特性，不是 bug。
 
 ### ❓ 第一次跑 `macli cal ls` / `event ls` / `reminder` 卡几秒
 
