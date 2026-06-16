@@ -257,11 +257,19 @@ Ad-hoc. Not Apple Developer ID (would require $99/year and notarization for marg
 
 ### ❓ Is the build reproducible?
 
-Yes, with caveats around Xcode/LLVM version pinning. Build hardening (SOURCE_DATE_EPOCH, ZERO_AR_DATE, deterministic mtimes, RPATH removal) is in `.x-cmd/release.common.sh`. Design notes in [`macli-mneme/story/260616.reproducible-build`](https://github.com/ljh-sh/macli-mneme/tree/main/story/260616.reproducible-build).
+Mostly yes.
+
+- Reproducibility depends on pinning Xcode / LLVM versions.
+- Build hardening — `SOURCE_DATE_EPOCH`, `ZERO_AR_DATE`, deterministic mtimes, RPATH removal — lives in `.x-cmd/release.common.sh`.
 
 ### ❓ Why was speech recognition (`macli speech recognize`) removed?
 
-`SFSpeechRecognizer` requires the caller bundle to declare `NSSpeechRecognitionUsageDescription` in its `Info.plist`. CLI binaries built via SwiftPM have no Info.plist and no bundle id, so macOS TCC refuses authorization and the process SIGABRTs. There is no clean fix without packaging macli as a `.app` bundle, which would complicate the release pipeline for a feature that's well-served by [sveinbjornt/hear](https://github.com/sveinbjornt/hear) (signed, notarized, BSD). Full post-mortem in [`macli-mneme#16`](https://github.com/ljh-sh/macli-mneme/issues/16).
+Short version: macOS won't let a bare CLI use speech recognition.
+
+- `SFSpeechRecognizer` needs an `Info.plist` with `NSSpeechRecognitionUsageDescription`.
+- SwiftPM CLI binaries don't have one, so TCC denies access and the process crashes.
+- Fixing it means bundling macli as a `.app`, which isn't worth the pipeline complexity.
+- Use [hear](https://github.com/sveinbjornt/hear) instead — it's signed, notarized, and does exactly this job.
 
 ### ❓ Why no aggregation / alerting built-in?
 
@@ -276,4 +284,3 @@ Apache 2.0 — see [LICENSE.txt](LICENSE.txt).
 ## Development
 
 - [DEV.md](DEV.md) — build, test, release commands
-- Issue tracker and design notes: [`macli-mneme`](https://github.com/ljh-sh/macli-mneme) (private)

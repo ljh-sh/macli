@@ -257,11 +257,19 @@ Ad-hoc。不是 Apple Developer ID（要 $99/年 + notarize，收益边际）。
 
 ### ❓ 构建可复现吗？
 
-可以，有 Xcode/LLVM 版本锁定的 caveat。构建硬化（SOURCE_DATE_EPOCH、ZERO_AR_DATE、确定性 mtime、RPATH 删除）在 `.x-cmd/release.common.sh`。设计笔记在 [`macli-mneme/story/260616.reproducible-build`](https://github.com/ljh-sh/macli-mneme/tree/main/story/260616.reproducible-build)。
+基本可复现。
+
+- 前提是 Xcode / LLVM 版本要固定。
+- 构建硬化（`SOURCE_DATE_EPOCH`、`ZERO_AR_DATE`、确定性 mtime、RPATH 删除）在 `.x-cmd/release.common.sh` 里处理。
 
 ### ❓ 为什么把语音识别（`macli speech recognize`）移除了？
 
-`SFSpeechRecognizer` 要求调用方 bundle 在 Info.plist 里声明 `NSSpeechRecognitionUsageDescription`。SwiftPM 编译的 CLI 二进制没有 Info.plist 也没有 bundle id，macOS TCC 拒绝授权，进程 SIGABRT。没有干净的 fix 除非把 macli 包成 `.app` bundle，而这会让发布流程为一个已经被 [sveinbjornt/hear](https://github.com/sveinbjornt/hear)（签名 + notarize + BSD）解决得很好的功能复杂化。完整复盘在 [`macli-mneme#16`](https://github.com/ljh-sh/macli-mneme/issues/16)。
+简单说：裸 CLI 用不了 macOS 语音识别。
+
+- `SFSpeechRecognizer` 需要在 `Info.plist` 里声明 `NSSpeechRecognitionUsageDescription`。
+- SwiftPM 编译的 CLI 没有 `Info.plist`，TCC 直接拒绝，进程会崩溃。
+- 要修就得把 macli 包成 `.app` bundle，发布流程变复杂，不值。
+- 直接用 [hear](https://github.com/sveinbjornt/hear) 吧，已签名、已 notarize，专干这个。
 
 ### ❓ 为什么不内置聚合 / 告警？
 
@@ -276,4 +284,3 @@ Apache 2.0 —— 见 [LICENSE.txt](LICENSE.txt)。
 ## 开发
 
 - [DEV.md](DEV.md) —— 构建 / 测试 / 发布命令
-- 设计笔记与 issue 跟踪：[`macli-mneme`](https://github.com/ljh-sh/macli-mneme)（私有）
