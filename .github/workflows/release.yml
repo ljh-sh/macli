@@ -95,10 +95,7 @@ jobs:
         run: |
           for f in artifacts/*.tar.xz artifacts/SHA256SUMS artifacts/BUILD_INFO.txt; do
             [ -f "$f" ] || continue
-            cosign sign-blob --yes \
-              --output-signature="${f}.sig" \
-              --output-certificate="${f}.pem" \
-              "$f"
+            cosign sign-blob --yes --bundle="${f}.sigstore.json" "$f"
           done
 
       - name: Create Release
@@ -111,5 +108,4 @@ jobs:
             artifacts/macli-darwin-*.tar.xz
             artifacts/SHA256SUMS
             artifacts/BUILD_INFO.txt
-            artifacts/*.sig
-            artifacts/*.pem
+            artifacts/*.sigstore.json

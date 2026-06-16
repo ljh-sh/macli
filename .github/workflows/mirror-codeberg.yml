@@ -32,5 +32,5 @@ jobs:
 
       - name: Push main + tags
         run: |
-          git push codeberg main --force-if-includes
-          git push codeberg --tags --force-if-includes
+          git push codeberg main --force
+          git push codeberg --tags --force
