@@ -88,7 +88,7 @@ Intel Mac 上，SMC 通过 `IOKit.framework` 私有 AppleSMC API 查询，使用
 
 读一个传感器大约要 30 行 C：打开 `AppleSMC` / `AppleHID` IOService，序列化 key，调 `IOConnectCallScalarMethod`，解返回的 struct。key 是私有的，struct 是私有的，调用约定从 Intel 到 Apple Silicon 完全变了。
 
-PyObjC 能调公开 framework，但 SMC 的 key 空间是**私有**的。从 Python 访问意味着 ctypes 级别的 struct 打包，每次 macOS 发布都会坏。没有 `pip install` 的路可走 —— 现有的 Python 尝试（[iStats](https://github.com/Chris911/iStats) 等）最终都烂掉了。
+PyObjC 能调公开 framework，但 SMC 的 key 空间是**私有**的。从 Python 访问意味着 ctypes 级别的 struct 打包，每次 macOS 发布都会坏。没有 `pip install` 的路能跟上 Apple Silicon 的新 key 命名空间。
 
 ### 为什么用 macli？
 

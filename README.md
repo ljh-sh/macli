@@ -88,7 +88,7 @@ References — the projects that mapped this out:
 
 Reading one sensor takes ~30 lines of C: open the `AppleSMC` / `AppleHID` IOService, serialize the key, call `IOConnectCallScalarMethod`, unpack the returned struct. The keys are private, the structs are private, the call convention changed between Intel and Apple Silicon.
 
-PyObjC can call public frameworks, but the SMC key space is **private**. Reaching it from Python means ctypes-level struct packing that breaks with every macOS release. There is no `pip install` path — every existing Python attempt ([iStats](https://github.com/Chris911/iStats), etc.) eventually bit-rotted.
+PyObjC can call public frameworks, but the SMC key space is **private**. Reaching it from Python means ctypes-level struct packing that breaks with every macOS release. There is no `pip install` path that keeps up with Apple Silicon's new key namespace.
 
 ### Why macli?
 
