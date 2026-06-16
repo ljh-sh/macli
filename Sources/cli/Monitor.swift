@@ -14,6 +14,9 @@ enum MonitorCmd: Cmd {
             let metricsStr: String? = p.opt("--metrics")
             let maxCount: Int? = p.opt("--count")
 
+            guard interval > 0 else { cmdError("--interval must be > 0") }
+            if let mc = maxCount, mc <= 0 { cmdError("--count must be > 0") }
+
             // Registry: all available metric sources
             let registry: [String: MetricSource] = [
                 "smc_temp": SmcTempSource(),
