@@ -79,17 +79,29 @@ enum MonitorCmd: Cmd {
                     let samples = src.sample()
                     let expected = layout[i].columns
 
-                    // Map by name (sanitize) to align with layout
-                    var byName: [String: Double] = [:]
-                    for s in samples {
-                        byName[sanitizeMetricName(s.name)] = s.value
-                    }
-                    for col in expected {
-                        let v = byName[col.name] ?? Double.nan
-                        if v.isNaN {
-                            line += "\t"
-                        } else {
-                            line += "\t\(v)"
+                    // Align by position: HID sensor arrays are positionally stable across
+                    // samples on the same machine. Names are documentation; indices are the
+                    // contract. Only fall back to name matching if the sample count diverges.
+                    if samples.count == expected.count {
+                        for s in samples {
+                            if s.value.isNaN {
+                                line += "\t"
+                            } else {
+                                line += "\t\(s.value)"
+                            }
+                        }
+                    } else {
+                        var byName: [String: Double] = [:]
+                        for s in samples {
+                            byName[sanitizeMetricName(s.name)] = s.value
+                        }
+                        for col in expected {
+                            let v = byName[col.name] ?? Double.nan
+                            if v.isNaN {
+                                line += "\t"
+                            } else {
+                                line += "\t\(v)"
+                            }
                         }
                     }
                 }
