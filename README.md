@@ -216,6 +216,36 @@ xattr -dr com.apple.quarantine /usr/local/bin/macli
 
 Single static-ish binary. No Python runtime, no PyObjC bridge, no ctypes layer.
 
+## FAQ
+
+**"macli cannot be opened because the developer cannot be verified"**
+macli ships with ad-hoc signature (no Apple Developer ID). For direct-download installs, strip the quarantine attribute:
+```sh
+xattr -dr com.apple.quarantine /usr/local/bin/macli
+```
+The Homebrew formula does this automatically.
+
+**`brew install macli` says "trust" or refuses to run the formula**
+Homebrew 6 added a trust step for third-party taps. Run `brew trust ljh-sh/macli` once, then `brew install macli`.
+
+**`macli cal ls` / `event ls` hangs for seconds on first call**
+macOS TCC is prompting for Calendar access. Click the system dialog to grant. Subsequent calls are instant. Check System Settings → Privacy & Security → Calendars if you missed the prompt.
+
+**`macli smc86 ...` returns empty results on Apple Silicon**
+Expected. `smc86` queries the Intel-Mac SMC key space, which Apple cleared on Apple Silicon. Use `macli smc` (not `smc86`) on M-series Macs. `smc86` is kept for Intel Macs and will be removed when they go EOL.
+
+**Can macli run on Linux / Windows?**
+No. It wraps Apple-private frameworks (IOKit, HID, EventKit, Speech) that exist only on macOS.
+
+**Do I need `sudo`?**
+No. All subcommands run as the invoking user. Sensor reads go through user-space IOKit / HID APIs.
+
+**How is this different from iStats / smcFanControl / stats?**
+Those are end-user tools (Ruby gem, fan-control app, menu-bar GUI). macli is a **CLI for scripts and agents** — JSON/TSV output, no GUI, no Ruby runtime, designed to be called from shell pipes and LLM tool use.
+
+**Is there a Python wrapper?**
+Not needed. `subprocess.run(["macli", "smc", "temp"], ...)` + `json.loads` is 3 lines and gives you the full schema. A wrapper would only hide it.
+
 ## License
 
 Apache 2.0 — see [LICENSE.txt](LICENSE.txt).

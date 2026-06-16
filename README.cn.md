@@ -216,6 +216,36 @@ xattr -dr com.apple.quarantine /usr/local/bin/macli
 
 单一静态二进制。无 Python runtime，无 PyObjC 桥，无 ctypes 层。
 
+## FAQ
+
+**"无法验证开发者" / "macli cannot be opened because the developer cannot be verified"**
+macli 是 ad-hoc 签名（没有 Apple Developer ID）。直接下载安装的话，去掉隔离属性：
+```sh
+xattr -dr com.apple.quarantine /usr/local/bin/macli
+```
+Homebrew Formula 会自动做这一步。
+
+**`brew install macli` 报 "trust" 或拒绝加载 Formula**
+Homebrew 6 对第三方 tap 加了 trust 步骤。跑一次 `brew trust ljh-sh/macli`，再 `brew install macli`。
+
+**`macli cal ls` / `event ls` 第一次调用卡几秒**
+macOS TCC 在弹日历授权对话框。点系统弹窗授权即可，后续调用瞬间返回。错过弹窗的话去 系统设置 → 隐私与安全 → 日历 里改。
+
+**`macli smc86 ...` 在 Apple Silicon 上返回空**
+正常。`smc86` 查的是 Intel Mac 的 SMC key 空间，Apple Silicon 上被清空了。M 系列 Mac 用 `macli smc`（不是 `smc86`）。`smc86` 只为 Intel Mac 保留，Intel 淘汰后整体移除。
+
+**macli 能跑在 Linux / Windows 吗？**
+不能。它封装的是 Apple 私有 framework（IOKit、HID、EventKit、Speech），只在 macOS 上存在。
+
+**需要 `sudo` 吗？**
+不需要。所有子命令以当前用户身份运行。传感器读取走用户态 IOKit / HID API。
+
+**跟 iStats / smcFanControl / stats 有什么区别？**
+那些是终端用户工具（Ruby gem、风扇控制 app、菜单栏 GUI）。macli 是**给脚本和 agent 用的 CLI** —— JSON/TSV 输出、无 GUI、无 Ruby runtime，设计为从 shell 管道和 LLM tool use 调用。
+
+**有 Python 封装吗？**
+不需要。`subprocess.run(["macli", "smc", "temp"], ...)` + `json.loads` 三行就拿到完整 schema。再加一层封装只会把它藏起来。
+
 ## License
 
 Apache 2.0 —— 见 [LICENSE.txt](LICENSE.txt)。
