@@ -8,7 +8,7 @@ name: Mirror to Codeberg
 on:
   push:
     branches: [main]
-  tags: ['v*']
+    tags: ['v*']
 
 permissions:
   contents: read
