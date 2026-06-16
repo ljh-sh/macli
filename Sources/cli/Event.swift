@@ -19,7 +19,7 @@ enum EventCmd: Cmd {
             TldrItem(desc: "List today's events", cmd: "macli event ls --calendar work --today"),
             TldrItem(desc: "List this week's events", cmd: "macli event ls --calendar work --week"),
             TldrItem(desc: "Add an event", cmd: "macli event add --calendar work --title Meeting --start 2024-01-15T10:00 --end 2024-01-15T11:00"),
-            TldrItem(desc: "Delete an event", cmd: "macli event rm <id>"),
+            TldrItem(desc: "Delete an event", cmd: "macli event rm <id> --yes"),
         ]
     }
 }
@@ -161,9 +161,15 @@ enum EventRm: Cmd {
     static let meta = CmdMeta(
         name: "rm",
         desc: "Delete event",
+        opts: [
+            OptMeta(name: "--yes", type: Bool.self, desc: "Confirm destructive deletion"),
+        ],
         args: [ArgMeta(name: "id", desc: "Event ID")],
         run: { p in
             let id = requireArg(p, 0, "Event ID")
+            guard p.opt("--yes") == true else {
+                cmdError("refusing to delete event without --yes")
+            }
             let acc = AccessCtrl(); try acc.askCal()
             let r = CalendarEventCtrl().del(uid: id)
             print(x.json.stringify(r) { ["deletedEventId": $0] })
