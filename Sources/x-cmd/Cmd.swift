@@ -78,14 +78,37 @@ func runCmd(_ type: Cmd.Type, _ args: [String]) throws {
         }
         
         if a.hasPrefix("-") {
-            let optName = a
+            let optName: String
+            let explicitValue: String?
+            if a.hasPrefix("--"), let eqIdx = a.firstIndex(of: "=") {
+                optName = String(a[..<eqIdx])
+                explicitValue = String(a[a.index(after: eqIdx)...])
+            } else {
+                optName = a
+                explicitValue = nil
+            }
             if let optMeta = meta.opts.first(where: { $0.name == optName || $0.alias == optName }) {
                 if optMeta.type is Bool.Type {
                     parsed.opts[optMeta.name] = true
                 } else {
-                    i += 1
-                    guard i < remaining.count else { cmdError("missing value for \(optName)") }
-                    let raw = remaining[i]
+                    let raw: String
+                    if let v = explicitValue {
+                        raw = v
+                    } else {
+                        i += 1
+                        guard i < remaining.count else { cmdError("missing value for \(optName)") }
+                        raw = remaining[i]
+                        // Disambiguate: a value that starts with `-` is the next flag, not our value.
+                        if raw.hasPrefix("-") {
+                            if optMeta.type is Int.Type && Int(raw) != nil {
+                                // negative integer literal is allowed
+                            } else if optMeta.type is Double.Type && Double(raw) != nil {
+                                // negative number literal is allowed
+                            } else {
+                                cmdError("missing value for \(optName)")
+                            }
+                        }
+                    }
                     if optMeta.type is Int.Type {
                         guard let v = Int(raw) else { cmdError("\(optName) requires an integer value") }
                         parsed.opts[optMeta.name] = v
