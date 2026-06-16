@@ -167,26 +167,28 @@ Wraps `NSUserNotification` for shell scripts. Covers the case where `osascript -
 
 ---
 
-## FAQ
+## FAQ about Installation & permissions
 
-### Installation & permissions
+### ❓ "macli cannot be opened because the developer cannot be verified"
 
-**"macli cannot be opened because the developer cannot be verified"**
 macli ships with ad-hoc signature (no Apple Developer ID). For direct-download installs, strip the quarantine attribute:
 ```sh
 xattr -dr com.apple.quarantine /usr/local/bin/macli
 ```
 The Homebrew formula does this automatically via `post_install`.
 
-**`brew install macli` says "trust" or refuses to load the formula**
+### ❓ `brew install macli` says "trust" or refuses to load the formula
+
 Homebrew 6 added a trust step for third-party taps. Run `brew trust ljh-sh/macli` once, then `brew install macli`. This is a security feature, not a bug.
 
-**First `macli cal ls` / `event ls` / `reminder` call hangs for seconds**
+### ❓ First `macli cal ls` / `event ls` / `reminder` call hangs for seconds
+
 macOS TCC is prompting for Calendar/Reminders access. Click the system dialog to grant. Subsequent calls are instant. If you missed the prompt, go to System Settings → Privacy & Security → Calendars (or Reminders) and enable the terminal you're running macli from.
 
-### SMC — what it is, why macli exists
+## FAQ about SMC — what it is, why macli exists
 
-**What is SMC?**
+### ❓ What is SMC?
+
 The **System Management Controller (SMC)** is an Apple controller embedded in every Mac. It monitors and reports CPU / GPU / SoC die temperatures, PMU voltage rails, PMU current rails, fan speeds (Intel Macs), and battery state.
 
 On Intel Macs, SMC is queried through `IOKit.framework`'s private AppleSMC API using 4-character keys (`TCXC`, `TG0P`, …). On Apple Silicon (M1–M4), the same data moved to a HID sensor hub — the keys are entirely different (`PMU tdie1`, `PMU tdie2`, …) and undocumented.
@@ -196,15 +198,18 @@ References — the projects that mapped this out:
 - [beltex/SMCKit](https://github.com/beltex/SMCKit) — Swift SMC library, the classic Intel-era reference
 - [freedomtan/sensors](https://github.com/freedomtan/sensors) — early Apple Silicon IOKit exploration
 
-**Why not Python / PyObjC?**
+### ❓ Why not Python / PyObjC?
+
 Reading one sensor takes ~30 lines of C: open the `AppleSMC` / `AppleHID` IOService, serialize the key, call `IOConnectCallScalarMethod`, unpack the returned struct. The keys are private, the structs are private, the call convention changed between Intel and Apple Silicon.
 
 PyObjC can call public frameworks, but the SMC key space is **private**. Reaching it from Python means ctypes-level struct packing that breaks with every macOS release. There is no `pip install` path that keeps up with Apple Silicon's new key namespace.
 
-**`macli smc86 ...` returns empty results on Apple Silicon**
+### ❓ `macli smc86 ...` returns empty results on Apple Silicon
+
 Expected. `smc86` queries the Intel-Mac SMC key space, which Apple cleared on Apple Silicon. Use `macli smc` (not `smc86`) on M-series Macs.
 
-**How is macli different from iStats / smcFanControl / stats / iSMC / SMCKit?**
+### ❓ How is macli different from iStats / smcFanControl / stats / iSMC / SMCKit?
+
 - [iStats](https://github.com/Chris911/iStats) — Ruby gem, Intel-only, last released 2018. GUI-leaning.
 - [smcFanControl](https://github.com/hholtmann/smcFanControl) — macOS app for setting minimum fan speed. GUI.
 - [stats](https://github.com/exelban/stats) — macOS menu-bar dashboard. GUI.
@@ -212,43 +217,54 @@ Expected. `smc86` queries the Intel-Mac SMC key space, which Apple cleared on Ap
 - [SMCKit](https://github.com/beltex/SMCKit) — Swift library, Intel-only. No CLI streaming, no EventKit.
 - **macli** — Swift CLI built for shell pipes and LLM agents. JSON/TSV only, no GUI, no Ruby/Go runtime, Apple Silicon first-class. Smallest binary in the list (~400 KB stripped).
 
-### EventKit internals
+## FAQ about EventKit internals
 
-**Why is `macli cal ls` faster than `osascript`?**
+### ❓ Why is `macli cal ls` faster than `osascript`?
+
 osascript routes through AppleScript → Calendar.app RPC channel → permission prompts. Every cold start loads the AppleScript component. macli links `EventKit.framework` directly and requests permission once via the standard TCC prompt; subsequent calls are in-process.
 
-**Why JSON instead of AppleScript list syntax?**
+### ❓ Why JSON instead of AppleScript list syntax?
+
 AppleScript returns human-formatted strings like `{calendar "Work", calendar "Home"}`. Parsing that requires regex on localized strings. JSON is parseable by `jq`, python, awk, every LLM tool-use interface, with stable field names regardless of system language.
 
-**Does macli modify my calendar data?**
+### ❓ Does macli modify my calendar data?
+
 Read commands (`cal ls`, `event ls`) never touch state. Write commands (`cal add`, `event add`, `reminder add`) only run when you invoke them explicitly, with the exact arguments you pass. macli never syncs, never deletes, never auto-modifies.
 
-### Compatibility
+## FAQ about Compatibility
 
-**Linux / Windows?**
+### ❓ Linux / Windows?
+
 No. macli wraps Apple-private frameworks (IOKit, HID, EventKit, UserNotifications) that exist only on macOS.
 
-**Do I need `sudo`?**
+### ❓ Do I need `sudo`?
+
 No. All subcommands run as the invoking user. Sensor reads go through user-space IOKit / HID APIs.
 
-**Apple Silicon vs Intel?**
+### ❓ Apple Silicon vs Intel?
+
 Both supported via a single universal binary. On Apple Silicon use `macli smc`; on Intel use `macli smc86`. The binaries are identical; the subcommand selects the sensor path.
 
-### Internals
+## FAQ about Internals
 
-**Binary size**
+### ❓ Binary size
+
 ~400 KB per arch (arm64 / x86_64), ~830 KB universal (fat Mach-O), ~110 KB arm64 tar.xz. Single static-ish binary — no Python runtime, no PyObjC bridge, no ctypes layer.
 
-**Code signature**
+### ❓ Code signature
+
 Ad-hoc. Not Apple Developer ID (would require $99/year and notarization for marginal benefit). The Homebrew formula strips `com.apple.quarantine` automatically. Manual installs need one `xattr -dr`.
 
-**Is the build reproducible?**
+### ❓ Is the build reproducible?
+
 Yes, with caveats around Xcode/LLVM version pinning. Build hardening (SOURCE_DATE_EPOCH, ZERO_AR_DATE, deterministic mtimes, RPATH removal) is in `.x-cmd/release.common.sh`. Design notes in [`macli-mneme/story/260616.reproducible-build`](https://github.com/ljh-sh/macli-mneme/tree/main/story/260616.reproducible-build).
 
-**Why was speech recognition (`macli speech recognize`) removed?**
+### ❓ Why was speech recognition (`macli speech recognize`) removed?
+
 `SFSpeechRecognizer` requires the caller bundle to declare `NSSpeechRecognitionUsageDescription` in its `Info.plist`. CLI binaries built via SwiftPM have no Info.plist and no bundle id, so macOS TCC refuses authorization and the process SIGABRTs. There is no clean fix without packaging macli as a `.app` bundle, which would complicate the release pipeline for a feature that's well-served by [sveinbjornt/hear](https://github.com/sveinbjornt/hear) (signed, notarized, BSD). Full post-mortem in [`macli-mneme#16`](https://github.com/ljh-sh/macli-mneme/issues/16).
 
-**Why no aggregation / alerting built-in?**
+### ❓ Why no aggregation / alerting built-in?
+
 Aggregation (avg, max, rolling window) and alerting (threshold → notify) belong in awk/jq/python where you control the semantics. Embedding them in macli would mean every new stat needs a new flag, and the `--help` would balloon past what an LLM can cheaply load as context. See "Design: agent-oriented" above.
 
 ---
