@@ -180,17 +180,16 @@ macli aka set work <calendar-id>            # 给日历 ID 设 alias，方便引
 
 ---
 
-## 通知 / TTS / 语音识别
+## 通知 / TTS / 语音
 
 ```sh
 macli notify send --title "完成" "构建结束"
 macli speak text "Hello"
 macli speak voices                          # 列出 180 个语音
-macli speech recognize audio.m4a            # 通过 Speech.framework 转录
-macli speech langs                          # 列出 63 种语言
+macli speech langs                          # 列出 63 种识别语言
 ```
 
-覆盖 `osascript -e 'display notification'` / `say` 能做但脚本化很别扭的场景（语音枚举、音频文件转录、批量发送）。`macli speech recognize` 封装 `Speech.framework`，本地设备转录 —— 无 API key，不上云。
+覆盖 `osascript -e 'display notification'` / `say` 能做但脚本化很别扭的场景（语音枚举、批量发送）。`speech langs` 枚举 `SFSpeechRecognizer.supportedLocales()` 供参考。
 
 ---
 

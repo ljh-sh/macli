@@ -186,11 +186,10 @@ Use cases: dashboards, CI notifiers ("next event in 5 min"), reminder batching, 
 macli notify send --title "Done" "build finished"
 macli speak text "Hello"
 macli speak voices                          # list 180 voices
-macli speech recognize audio.m4a            # transcribe via Speech.framework
-macli speech langs                          # list 63 languages
+macli speech langs                          # list 63 recognition languages
 ```
 
-These cover the cases where `osascript -e 'display notification'` / `say` work but are awkward to script (voice enumeration, audio-file transcription, batch sends). `macli speech recognize` in particular wraps `Speech.framework` with on-device transcription — no API key, no cloud.
+These cover the cases where `osascript -e 'display notification'` / `say` work but are awkward to script (voice enumeration, batch sends). `speech langs` enumerates `SFSpeechRecognizer.supportedLocales()` for reference.
 
 ---
 
