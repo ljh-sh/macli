@@ -19,6 +19,7 @@ enum ReminderCmd: Cmd {
         [
             TldrItem(desc: "List reminders in a list", cmd: "macli reminder ls --list work"),
             TldrItem(desc: "Add a reminder", cmd: "macli reminder add --list work --title 'Buy milk' --due 2024-01-15"),
+            TldrItem(desc: "Delete a reminder", cmd: "macli reminder rm <id> --yes"),
             TldrItem(desc: "Mark reminder as complete", cmd: "macli reminder complete <id>"),
             TldrItem(desc: "Undo completion", cmd: "macli reminder undo <id>"),
         ]
@@ -82,12 +83,23 @@ enum ReminderAdd: Cmd {
 }
 
 enum ReminderRm: Cmd {
-    static let meta = CmdMeta(name: "rm", args: [ArgMeta(name: "id")], run: { p in
-        let id = requireArg(p, 0, "ID")
-        let acc = AccessCtrl(); try acc.askReminder()
-        let r = ReminderCtrl().delItem(uid: id)
-        print(x.json.stringify(r) { ["deletedReminderId": $0] })
-    })
+    static let meta = CmdMeta(
+        name: "rm",
+        desc: "Delete reminder",
+        opts: [
+            OptMeta(name: "--yes", type: Bool.self, desc: "Confirm destructive deletion"),
+        ],
+        args: [ArgMeta(name: "id")],
+        run: { p in
+            let id = requireArg(p, 0, "ID")
+            guard p.opt("--yes") == true else {
+                cmdError("refusing to delete reminder without --yes")
+            }
+            let acc = AccessCtrl(); try acc.askReminder()
+            let r = ReminderCtrl().delItem(uid: id)
+            print(x.json.stringify(r) { ["deletedReminderId": $0] })
+        }
+    )
 }
 
 enum ReminderComplete: Cmd {
