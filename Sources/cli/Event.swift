@@ -49,12 +49,22 @@ enum EventLs: Cmd {
                 start = DateParser.startOfDay(Date()); end = DateParser.endOfDay(Date())
             } else if week {
                 let c = Calendar.current
-                start = c.date(from: c.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date()))
-                end = c.date(byAdding: .day, value: 7, to: start!)
+                guard let s = c.date(from: c.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) else {
+                    cmdError("could not resolve week start date")
+                }
+                guard let e = c.date(byAdding: .day, value: 7, to: s) else {
+                    cmdError("could not resolve week end date")
+                }
+                start = s; end = e
             } else if month {
                 let c = Calendar.current
-                start = c.date(from: c.dateComponents([.year, .month], from: Date()))
-                end = c.date(byAdding: .month, value: 1, to: start!)
+                guard let s = c.date(from: c.dateComponents([.year, .month], from: Date())) else {
+                    cmdError("could not resolve month start date")
+                }
+                guard let e = c.date(byAdding: .month, value: 1, to: s) else {
+                    cmdError("could not resolve month end date")
+                }
+                start = s; end = e
             } else {
                 guard let fromVal = from, let s = DateParser.parse(fromVal) else { cmdError("--from required") }
                 guard let toVal = to, let e = DateParser.parse(toVal) else { cmdError("--to required") }
@@ -62,8 +72,10 @@ enum EventLs: Cmd {
                 end = DateParser.endOfDay(e)
             }
             
+            guard let s = start, let e = end else { cmdError("could not resolve date range") }
+            
             let acc = AccessCtrl(); try acc.askCal()
-            let r = CalendarEventCtrl().list(calUid: CfgCtrl.getId(calendar), from: start!, to: end!)
+            let r = CalendarEventCtrl().list(calUid: CfgCtrl.getId(calendar), from: s, to: e)
             print(x.json.stringify(r) { ["events": $0.map { $0.toDict() }, "count": $0.count] })
         }
     )
