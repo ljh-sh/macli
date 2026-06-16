@@ -17,7 +17,7 @@
 最小上下文、最大灵活性 —— 把下面这行 prompt 贴给 Claude Code、Cursor 或任意 agent：
 
 ```md
-用 `macli` 取 macOS 系统状态（传感器 / 日历 / 提醒 / 通知）。若未安装：`brew install ljh-sh/macli/macli`。输出为 JSON，检查 `ok` 字段。子命令列表 `macli --help`。
+用 `macli` 取 macOS 系统状态（传感器 / 日历 / 提醒 / 通知）。若未安装：`brew install ljh-sh/cli/macli`。输出为 JSON，检查 `ok` 字段。子命令列表 `macli --help`。
 ```
 
 ## 安装
@@ -25,14 +25,14 @@
 ### Homebrew（推荐）
 
 ```sh
-brew tap ljh-sh/macli
-brew install macli
+brew install ljh-sh/cli/macli
 ```
 
-或一行：
+或先 tap，再用短名安装：
 
 ```sh
-brew install ljh-sh/macli/macli
+brew tap ljh-sh/cli
+brew install macli
 ```
 
 ### 直接下载二进制
@@ -193,7 +193,7 @@ Homebrew Formula 通过 `post_install` 自动做。
 
 ### ❓ `brew install macli` 报 "trust" 或拒绝加载 Formula
 
-Homebrew 6 对第三方 tap 加了 trust 步骤。跑一次 `brew trust ljh-sh/macli`，再 `brew install macli`。这是安全特性，不是 bug。
+Homebrew 6 对第三方 tap 加了 trust 步骤。跑一次 `brew trust ljh-sh/cli`，再 `brew install ljh-sh/cli/macli`。这是安全特性，不是 bug。
 
 ### ❓ 第一次跑 `macli cal ls` / `event ls` / `reminder` 卡几秒
 

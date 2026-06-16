@@ -1,6 +1,11 @@
 #!/bin/bash
 # SMC: Sensor data validity
 
+if [[ -n "$MACLI_SKIP_SENSOR_DATA" ]]; then
+    info "Skipping hardware sensor data checks in CI environment"
+    return 0 2>/dev/null || exit 0
+fi
+
 TEMPS=$($BIN smc temp 2>&1 | grep -c '"name"' || echo 0)
 if [[ $TEMPS -gt 10 ]]; then
     pass "smc temp returns $TEMPS sensors (>10 expected)"

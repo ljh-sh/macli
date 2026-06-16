@@ -17,7 +17,7 @@ Mirrors: [github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg
 Minimal context with maximum flexibility — paste this one-line prompt into Claude Code, Cursor, or any agent's system prompt:
 
 ```md
-Use `macli` for macOS system state (sensors / calendar / reminders / notifications). Install if missing: `brew install ljh-sh/macli/macli`. JSON output, check `ok`. Run `macli --help` for subcommands.
+Use `macli` for macOS system state (sensors / calendar / reminders / notifications). Install if missing: `brew install ljh-sh/cli/macli`. JSON output, check `ok`. Run `macli --help` for subcommands.
 ```
 
 ## Install
@@ -25,14 +25,14 @@ Use `macli` for macOS system state (sensors / calendar / reminders / notificatio
 ### Homebrew (recommended)
 
 ```sh
-brew tap ljh-sh/macli
-brew install macli
+brew install ljh-sh/cli/macli
 ```
 
-Or one-liner:
+Or tap once, then use the short name:
 
 ```sh
-brew install ljh-sh/macli/macli
+brew tap ljh-sh/cli
+brew install macli
 ```
 
 ### Direct binary
@@ -193,7 +193,7 @@ The Homebrew formula does this automatically via `post_install`.
 
 ### ❓ `brew install macli` says "trust" or refuses to load the formula
 
-Homebrew 6 added a trust step for third-party taps. Run `brew trust ljh-sh/macli` once, then `brew install macli`. This is a security feature, not a bug.
+Homebrew 6 added a trust step for third-party taps. Run `brew trust ljh-sh/cli` once, then `brew install ljh-sh/cli/macli`. This is a security feature, not a bug.
 
 ### ❓ First `macli cal ls` / `event ls` / `reminder` call hangs for seconds
 
