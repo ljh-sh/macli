@@ -19,6 +19,7 @@ enum CalCmd: Cmd {
             TldrItem(desc: "List calendars and reminder lists", cmd: "macli cal la"),
             TldrItem(desc: "Create a new calendar", cmd: "macli cal add --name Work --color #FF0000"),
             TldrItem(desc: "Delete a calendar", cmd: "macli cal rm <id>"),
+            TldrItem(desc: "Delete a reminder list", cmd: "macli cal rm <id> --type reminder"),
         ]
     }
 }
@@ -73,10 +74,15 @@ enum CalRm: Cmd {
     static let meta = CmdMeta(
         name: "rm",
         desc: "Delete a calendar",
+        opts: [
+            OptMeta(name: "--type", desc: "Type: event or reminder (default: event)", `default`: "event"),
+        ],
         args: [ArgMeta(name: "id", desc: "Calendar ID")],
         run: { p in
             let id = requireArg(p, 0, "Calendar ID")
-            let acc = AccessCtrl(); try acc.askCal(); try acc.askReminder()
+            let type: String = p.opt("--type") ?? "event"
+            let acc = AccessCtrl()
+            if type == "reminder" { try acc.askReminder() } else { try acc.askCal() }
             let r = CalendarCtrl().del(uid: CfgCtrl.getId(id))
             print(x.json.stringify(r) { ["deletedCalendarId": $0] })
         }
