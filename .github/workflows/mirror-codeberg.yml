@@ -1,4 +1,4 @@
-# Mirror main branch to Codeberg after every push to GitHub main.
+# Mirror main branch and tags to Codeberg after every push to GitHub.
 # Keeps https://codeberg.org/ljh-sh/macli in sync automatically.
 #
 # Token: CODEBERG_TOKEN secret (Codeberg access token with write:repository).
@@ -32,5 +32,7 @@ jobs:
 
       - name: Push main + tags
         run: |
-          git push codeberg main --force
+          # Push the currently checked-out commit to Codeberg main. This works
+          # for both branch pushes (HEAD == main) and tag pushes (HEAD == tag).
+          git push codeberg HEAD:main --force
           git push codeberg --tags --force
