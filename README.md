@@ -1,6 +1,6 @@
 # macli
 
-> macOS system tools for AI agents. Native Apple frameworks. AI-friendly JSON/TSV output.
+> Minimal context with maximum flexibility — macOS system tools for AI agents. Native Apple frameworks. AI-friendly JSON/TSV output.
 
 **macli** turns macOS system internals into a clean CLI. SMC sensors, streaming monitor, calendar/reminders, notifications — all callable from shell pipes or LLM agents, all JSON/TSV. One ~400 KB Swift binary. No Python runtime, no osascript overhead, no GUI.
 
@@ -10,10 +10,10 @@ Mirrors: [github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg
 
 ## For AI agents
 
-One-line prompt — paste into Claude Code, Cursor, or any agent's system prompt:
+Minimal context with maximum flexibility — paste this one-line prompt into Claude Code, Cursor, or any agent's system prompt:
 
 ```md
-Install `macli` if missing: `brew install ljh-sh/macli/macli`. Use it for macOS system state (sensors / calendar / reminders / notifications). JSON output, check the `ok` field. Run `macli --help` to list subcommands.
+Use `macli` for macOS system state (sensors / calendar / reminders / notifications). Install if missing: `brew install ljh-sh/macli/macli`. JSON output, check `ok`. Run `macli --help` for subcommands.
 ```
 
 ## Install
@@ -97,7 +97,7 @@ Sample output:
 
 ### Design: agent-oriented
 
-macli deliberately stays **dumb**. It does **not** compute thermal indexes, aggregate, render charts, or decide what's "hot". It returns raw sensor values, full stop. Decisions belong to the caller:
+macli follows the x-cmd agent-tool design principle: **minimal context with maximum flexibility**. It stays **dumb** — it does **not** compute thermal indexes, aggregate, render charts, or decide what's "hot". It returns raw sensor values, full stop. Decisions belong to the caller:
 
 ```sh
 macli smc temp --tsv | awk -F'\t' '$2 > 80 {print $1, "OVERHEAT"}'

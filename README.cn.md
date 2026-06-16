@@ -1,6 +1,6 @@
 # macli
 
-> 面向 AI agent 的 macOS 系统工具。原生 Apple framework。AI 友好的 JSON/TSV 输出。
+> 最小上下文，最大灵活性 —— 面向 AI agent 的 macOS 系统工具。原生 Apple framework。AI 友好的 JSON/TSV 输出。
 
 **macli** 把 macOS 系统内部能力做成干净的 CLI。SMC 传感器、流式监控、日历/提醒、通知 —— 全都能从 shell 管道或 LLM agent 调用，全是 JSON/TSV。单一 ~400 KB Swift 二进制。无 Python runtime，无 osascript 开销，无 GUI。
 
@@ -10,10 +10,10 @@
 
 ## 面向 AI agent
 
-一句话 prompt —— 直接粘贴到 Claude Code、Cursor 或任意 agent 的 system prompt：
+最小上下文、最大灵活性 —— 把下面这行 prompt 贴给 Claude Code、Cursor 或任意 agent：
 
 ```md
-若 `macli` 未安装则先装：`brew install ljh-sh/macli/macli`。用它取 macOS 系统状态（传感器 / 日历 / 提醒 / 通知）。输出为 JSON，检查 `ok` 字段。子命令列表 `macli --help`。
+用 `macli` 取 macOS 系统状态（传感器 / 日历 / 提醒 / 通知）。若未安装：`brew install ljh-sh/macli/macli`。输出为 JSON，检查 `ok` 字段。子命令列表 `macli --help`。
 ```
 
 ## 安装
@@ -97,7 +97,7 @@ macli smc all             # → 全部
 
 ### 设计：agent-oriented
 
-macli 故意保持**笨**。它不算热指数、不聚合、不画图、不判断什么是"过热"。只返回原始传感器值，到此为止。判断交给调用方：
+macli 遵循 x-cmd 面向 agent 的 CLI 工具设计原则：**最小上下文，最大灵活性**。它故意保持**笨** —— 不算热指数、不聚合、不画图、不判断什么是"过热"。只返回原始传感器值，到此为止。判断交给调用方：
 
 ```sh
 macli smc temp --tsv | awk -F'\t' '$2 > 80 {print $1, "过热"}'
