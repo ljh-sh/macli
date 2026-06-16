@@ -1,122 +1,140 @@
 # macli
 
-macOS system tools CLI with JSON/YAML output. Zero dependencies.
+> macOS native binary for things shell/python can't do.
+
+**macli** is a small Swift-compiled CLI that exposes private macOS APIs (HID, IOKit, Speech, EventKit) which are painful or impossible to call from Python/-shell. It is **not** a "every macOS tool combined" — only the parts where `subprocess` + `osascript` + PyObjC genuinely struggle.
 
 ## Install
 
-```bash
+### Homebrew (recommended)
+
+```sh
+brew tap ljh-sh/macli
+brew install macli
+```
+
+Or one-liner:
+
+```sh
+brew install ljh-sh/macli/macli
+```
+
+### Direct binary
+
+Download from [Releases](https://github.com/ljh-sh/macli/releases):
+
+```sh
+curl -L https://github.com/ljh-sh/macli/releases/latest/download/macli-darwin-universal.tar.xz | tar xJ -
+sudo mv bin/macli /usr/local/bin/
+```
+
+The `universal` tarball contains a fat Mach-O (arm64 + x86_64) — works on both Apple Silicon and Intel Macs.
+
+### Build from source
+
+Requires Swift 5.10+ / macOS 12+.
+
+```sh
+git clone https://github.com/ljh-sh/macli
+cd macli
 swift build -c release
-cp .build/release/macli /usr/local/bin/
+.release-artifacts/darwin-arm64/bin/macli --help   # after .x-cmd/release darwin-arm64
 ```
 
-## Commands
+## Subcommands
 
-### cal - Calendar Management
+### `smc` — Apple Silicon SMC sensors (HID)
 
-```bash
-macli cal ls                  # List all calendars
-macli cal add --name Work     # Create calendar
-macli cal rm --name Work      # Delete calendar
+```sh
+macli smc temp        # temperatures (JSON, default)
+macli smc temp --tsv  # TSV output for awk
+macli smc volt        # PMU voltage rails
+macli smc curr        # PMU current rails
+macli smc all         # everything
 ```
 
-### event - Calendar Events
+### `smc86` — Intel SMC sensors (legacy, sunset track)
 
-```bash
-macli event ls --calendar Work                    # List events
-macli event add --calendar Work --title Meeting \
-                --start "2024-01-15 10:00" \
-                --end "2024-01-15 11:00"          # Create event
-macli event rm --id <event-id>                    # Delete event
+Same interface as `smc`, for Intel Macs. Will be removed when Intel Macs go EOL.
+
+### `monitor` — Streaming TSV monitor
+
+Single process, all metric sources. Designed for `awk` post-processing:
+
+```sh
+macli monitor --interval 1 --metrics smc_temp,smc_curr
+macli monitor --count 10 --interval 0.5 --metrics smc_temp \
+  | awk -F'\t' 'NR>1 {sum+=$2; n++} END {print "avg:", sum/n}'
 ```
 
-### reminder - Reminders
+Flags: `--interval N` (decimal seconds), `--metrics list`, `--count N` (exit after N samples).
 
-```bash
-macli reminder ls             # List reminder lists
-macli reminder add --name Shopping  # Create list
+### EventKit family
+
+```sh
+macli cal ls                                # list calendars
+macli event ls --calendar Work --today      # today's events
+macli reminder add --list Shopping "Buy milk"
+macli aka set work <calendar-id>            # alias for calendar IDs
 ```
 
-### notify - System Notifications
+### Notifications / TTS / Speech
 
-```bash
-macli notify --title "Alert" --body "Task done"
-macli notify --title "Test" --sound    # With sound
+```sh
+macli notify send --title "Done" "build finished"
+macli speak text "Hello"
+macli speak voices                          # list 180 voices
+macli speech recognize audio.m4a            # transcribe
+macli speech langs                          # list 63 languages
 ```
 
-### location - Current Location
+## Output conventions
 
-```bash
-macli location                # Get current coordinates
-```
+- **Snapshot commands**: JSON with `{"ok": bool, ...}` (default). `--tsv` for awk-friendly.
+- **Streaming commands** (`monitor`): TSV only, header on first line.
+- **Errors**: `{"ok": false, "error": "...", "hint": "..."}` — never silent.
 
-### speak - Text to Speech
-
-```bash
-macli speak "Hello World"     # Speak text
-```
-
-### speech - Speech Recognition
-
-```bash
-macli speech recognize --file audio.m4a  # Transcribe audio
-```
-
----
-
-### smc - Apple Silicon SMC Sensors (M1/M2/M3/M4/M5)
-
-```bash
-macli smc temp        # Temperature sensors (JSON)
-macli smc temp --tsv  # Temperature sensors (TSV)
-macli smc volt        # Voltage sensors
-macli smc curr        # Current sensors
-macli smc all         # All sensors
-```
-
-**Subcommands:** `temp`, `volt`, `curr`, `power`, `fans`, `batt`, `all`
-
-**Options:** `--tsv` - Output TSV instead of JSON
-
-### smc86 - Intel SMC Sensors (Legacy)
-
-```bash
-macli smc86 temp      # Temperature sensors
-macli smc86 fans      # Fan speeds
-macli smc86 batt      # Battery status
-macli smc86 all       # All sensors
-```
-
-## Output Format
-
-### JSON (default)
+JSON example:
 
 ```json
 {
   "ok": true,
   "source": "HID",
-  "sensors": [
-    {"name": "PMU tdie1", "value": 57.5, "unit": "°C"}
-  ],
+  "sensors": [{"name": "PMU tdie1", "value": 57.5, "unit": "°C"}],
   "count": 45
 }
 ```
 
-### TSV (--tsv)
+## Code signature
 
+macli ships with **ad-hoc signature** (not Apple Developer ID). The Homebrew formula strips `com.apple.quarantine` automatically. For manual install, run:
+
+```sh
+xattr -dr com.apple.quarantine /usr/local/bin/macli
 ```
-name    value   unit
-PMU tdie1       57.5    °C
-```
 
-## Binary Size
+## What macli is not
 
-- Binary: ~580KB
-- Compressed (tar.xz): ~136KB
+If a feature can be done with `subprocess` + system CLI (`pmset`, `system_profiler`, `ioreg`, `airport`, `networksetup`), `osascript`, or clean PyObjC, it belongs to [`x-bash/mac`](https://github.com/x-bash/mac) — not macli.
+
+macli's scope: private frameworks, HID/IOKit/kext communication, reverse-engineered protocols, high-frequency polling.
+
+## Binary size
+
+- ~370 KB per arch (arm64 / x86_64)
+- ~220 KB universal (fat Mach-O)
+- ~105 KB compressed (tar.xz)
 
 ## License
 
-Apache 2.0
+Apache 2.0 — see [LICENSE.txt](LICENSE.txt).
 
----
+## Development
 
-For development docs, see [DEV.md](DEV.md)
+- [DEV.md](DEV.md) — build, test, release commands
+- Dev roadmap, stories, design decisions live in [`macli-mneme`](https://github.com/ljh-sh/macli-mneme) (private)
+
+## Related
+
+- [`x-bash/mac`](https://github.com/x-bash/mac) — script layer that calls macli
+- [`x-bash/gpu`](https://github.com/x-bash/gpu), [`x-bash/cpu`](https://github.com/x-bash/cpu), [`x-bash/display`](https://github.com/x-bash/display) — ctypes hacks that macli is gradually replacing
