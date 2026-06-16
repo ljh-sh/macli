@@ -78,19 +78,22 @@ func runCmd(_ type: Cmd.Type, _ args: [String]) throws {
         }
         
         if a.hasPrefix("-") {
-            let optName = a.hasPrefix("--") ? a : a
+            let optName = a
             if let optMeta = meta.opts.first(where: { $0.name == optName || $0.alias == optName }) {
-                i += 1
-                if i < remaining.count, optMeta.type is String.Type {
-                    parsed.opts[optMeta.name] = remaining[i]
-                } else if optMeta.type is Bool.Type {
+                if optMeta.type is Bool.Type {
                     parsed.opts[optMeta.name] = true
-                    i -= 1
-                } else if i < remaining.count {
+                } else {
+                    i += 1
+                    guard i < remaining.count else { cmdError("missing value for \(optName)") }
+                    let raw = remaining[i]
                     if optMeta.type is Int.Type {
-                        parsed.opts[optMeta.name] = Int(remaining[i])
+                        guard let v = Int(raw) else { cmdError("\(optName) requires an integer value") }
+                        parsed.opts[optMeta.name] = v
                     } else if optMeta.type is Double.Type {
-                        parsed.opts[optMeta.name] = Double(remaining[i])
+                        guard let v = Double(raw) else { cmdError("\(optName) requires a numeric value") }
+                        parsed.opts[optMeta.name] = v
+                    } else {
+                        parsed.opts[optMeta.name] = raw
                     }
                 }
             }
