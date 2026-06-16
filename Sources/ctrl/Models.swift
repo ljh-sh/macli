@@ -75,15 +75,6 @@ struct RouteStep {
     var dist: Double
 }
 
-// MARK: Notify Models
-
-struct NotifyInfo {
-    var title: String
-    var body: String
-    var sound: Bool
-    var scheduledAt: String?
-}
-
 // MARK: Generic Result
 
 enum R<T> {

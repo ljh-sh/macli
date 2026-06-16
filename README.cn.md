@@ -6,7 +6,7 @@
 
 > 最小上下文，最大灵活性 —— 面向 AI agent 的 macOS 系统工具。原生 Apple framework。AI 友好的 JSON/TSV 输出。
 
-**macli** 把 macOS 系统内部能力做成干净的 CLI。SMC 传感器、流式监控、日历/提醒、通知 —— 全都能从 shell 管道或 LLM agent 调用，全是 JSON/TSV。单一 ~400 KB Swift 二进制。无 Python runtime，无 osascript 开销，无 GUI。
+**macli** 把 macOS 系统内部能力做成干净的 CLI。SMC 传感器、流式监控、日历/提醒 —— 全都能从 shell 管道或 LLM agent 调用，全是 JSON/TSV。单一 ~400 KB Swift 二进制。无 Python runtime，无 osascript 开销，无 GUI。
 
 用它，当你（或你的 AI agent）需要问 macOS 一些 `system_profiler` / `ioreg` / `osascript` 答不出或答得很烂的问题：*CPU 此刻的核心温度*、*以 1 Hz 把传感器流式喂给 awk*、*今天日历的 JSON*。
 
@@ -17,7 +17,7 @@
 最小上下文、最大灵活性 —— 把下面这行 prompt 贴给 Claude Code、Cursor 或任意 agent：
 
 ```md
-用 `macli` 取 macOS 系统状态（传感器 / 日历 / 提醒 / 通知）。若未安装：`brew install ljh-sh/cli/macli`。输出为 JSON，检查 `ok` 字段。子命令列表 `macli --help`。
+用 `macli` 取 macOS 系统状态（传感器 / 日历 / 提醒）。若未安装：`brew install ljh-sh/cli/macli`。输出为 JSON，检查 `ok` 字段。子命令列表 `macli --help`。
 ```
 
 ## 安装
@@ -69,7 +69,6 @@ swift build -c release
 macli smc temp                              # CPU/GPU 温度（JSON）
 macli monitor --count 10 --interval 1       # 流式 10 个样本给 awk
 macli cal ls                                # 列日历（JSON）
-macli notify send --title "完成" "..."        # 推一条通知
 ```
 
 输出 schema：成功 `{"ok": true, ...}`，失败 `{"ok": false, "error": "...", "hint": "..."}`。从不沉默。
@@ -78,7 +77,7 @@ macli notify send --title "完成" "..."        # 推一条通知
 
 ## 路线图
 
-- [x] SMC 传感器快照、流式监控、EventKit、通知
+- [x] SMC 传感器快照、流式监控、EventKit
 - [ ] 电池健康（`macli battery`）
 - [ ] SSD 健康（`macli ssd`）
 
@@ -163,16 +162,6 @@ macli aka set work <calendar-id>            # 给日历 ID 设 alias，方便引
 
 ---
 
-## 通知
-
-```sh
-macli notify send --title "完成" "构建结束"
-```
-
-封装 `NSUserNotification` 给 shell 脚本用。覆盖 `osascript -e 'display notification'` 能做但参数化很别扭的场景。
-
----
-
 ## 输出约定
 
 - **快照命令**：默认 JSON 带 `{"ok": bool, ...}`。`--tsv` 切到 awk 友好格式。
@@ -249,7 +238,7 @@ AppleScript 返回人类可读的字符串如 `{calendar "Work", calendar "Home"
 
 ### ❓ Linux / Windows？
 
-不能。macli 封装的是 Apple 私有 framework（IOKit、HID、EventKit、UserNotifications），只在 macOS 上存在。
+不能。macli 封装的是 Apple 私有 framework（IOKit、HID、EventKit），只在 macOS 上存在。
 
 ### ❓ 需要 `sudo` 吗？
 
