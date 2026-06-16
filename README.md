@@ -30,6 +30,15 @@ sudo mv bin/macli /usr/local/bin/
 
 The `universal` tarball contains a fat Mach-O (arm64 + x86_64) — works on both Apple Silicon and Intel Macs.
 
+### eget
+
+Via [x-cmd eget](https://x-cmd.com/install/macli) — downloads the right release asset and puts it on PATH:
+
+```sh
+x eget ljh-sh/macli        # download and install
+x eget use ljh-sh/macli    # use temporarily in current shell
+```
+
 ### Build from source
 
 Requires Swift 5.10+ / macOS 12+.

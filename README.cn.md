@@ -30,6 +30,15 @@ sudo mv bin/macli /usr/local/bin/
 
 `universal` tarball 是 fat Mach-O（arm64 + x86_64），Apple Silicon 和 Intel Mac 都能跑。
 
+### eget
+
+通过 [x-cmd eget](https://x-cmd.com/install/macli) —— 下载对应的 release 产物并放到 PATH：
+
+```sh
+x eget ljh-sh/macli        # 下载并安装
+x eget use ljh-sh/macli    # 在当前 shell 临时使用
+```
+
 ### 源码编译
 
 需要 Swift 5.10+ / macOS 12+。
