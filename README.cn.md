@@ -46,7 +46,7 @@ sudo mv bin/macli /usr/local/bin/
 
 ```sh
 x eget ljh-sh/macli        # 下载并安装
-x eget use ljh-sh/macli    # 在当前 shell 临时使用
+x eget use ljh-sh/macli    # 装到 ~/.local/bin
 ```
 
 ### 源码编译

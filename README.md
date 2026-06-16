@@ -46,7 +46,7 @@ Via [x-cmd eget](https://x-cmd.com/install/macli) — downloads the right releas
 
 ```sh
 x eget ljh-sh/macli        # download and install
-x eget use ljh-sh/macli    # use temporarily in current shell
+x eget use ljh-sh/macli    # install to ~/.local/bin
 ```
 
 ### Build from source
