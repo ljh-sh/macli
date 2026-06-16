@@ -1,0 +1,30 @@
+# Mirror main branch to Codeberg after every push to GitHub main.
+# Keeps https://codeberg.org/ljh-sh/macli in sync automatically.
+#
+# Token: CODEBERG_TOKEN secret (Codeberg access token with write:repository).
+# Auth: embedded in remote URL (https://user:token@codeberg.org/...).
+name: Mirror to Codeberg
+
+on:
+  push:
+    branches: [main]
+  tags: ['v*']
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need full history + tags
+
+      - name: Configure Codeberg remote
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git remote add codeberg "https://ljh-sh:${{ secrets.CODEBERG_TOKEN }}@codeberg.org/ljh-sh/macli.git"
+
+      - name: Push main + tags
+        run: |
+          git push codeberg main --force-if-includes
+          git push codeberg --tags --force-if-includes
