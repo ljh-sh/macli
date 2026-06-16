@@ -281,6 +281,3 @@ Ad-hoc。不是 Apple Developer ID（要 $99/年 + notarize，收益边际）。
 
 Apache 2.0 —— 见 [LICENSE.txt](LICENSE.txt)。
 
-## 开发
-
-- [DEV.md](DEV.md) —— 构建 / 测试 / 发布命令

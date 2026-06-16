@@ -281,6 +281,3 @@ Aggregation (avg, max, rolling window) and alerting (threshold → notify) belon
 
 Apache 2.0 — see [LICENSE.txt](LICENSE.txt).
 
-## Development
-
-- [DEV.md](DEV.md) — build, test, release commands
