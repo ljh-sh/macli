@@ -2,7 +2,9 @@
 
 > 面向 AI agent 的 macOS 系统工具。原生 Apple framework。AI 友好的 JSON/TSV 输出。
 
-**macli** 是一个 Swift 编译的小 CLI，通过你 GUI 应用同样的原生 Apple framework 暴露 macOS 系统状态 —— SMC 传感器、流式监控、日历/提醒、通知。单一二进制，JSON/TSV 输出，为 LLM agent 和 shell 脚本同样设计。
+**macli** 把 macOS 系统内部能力做成干净的 CLI。SMC 传感器、流式监控、日历/提醒、通知 —— 全都能从 shell 管道或 LLM agent 调用，全是 JSON/TSV。单一 ~400 KB Swift 二进制。无 Python runtime，无 osascript 开销，无 GUI。
+
+用它，当你（或你的 AI agent）需要问 macOS 一些 `system_profiler` / `ioreg` / `osascript` 答不出或答得很烂的问题：*CPU 此刻的核心温度*、*以 1 Hz 把传感器流式喂给 awk*、*今天日历的 JSON*。
 
 镜像：[github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg.org/ljh-sh/macli](https://codeberg.org/ljh-sh/macli)
 
@@ -31,8 +33,6 @@ brew install ljh-sh/macli/macli
 
 ### 直接下载二进制
 
-从 [Releases](https://github.com/ljh-sh/macli/releases) 下载：
-
 ```sh
 curl -L https://github.com/ljh-sh/macli/releases/latest/download/macli-darwin-universal.tar.xz | tar xJ -
 sudo mv bin/macli /usr/local/bin/
@@ -42,7 +42,7 @@ sudo mv bin/macli /usr/local/bin/
 
 ### eget
 
-通过 [x-cmd eget](https://x-cmd.com/install/macli) —— 下载对应的 release 产物并放到 PATH：
+通过 [x-cmd eget](https://x-cmd.com/install/macli)：
 
 ```sh
 x eget ljh-sh/macli        # 下载并安装
@@ -57,42 +57,24 @@ x eget use ljh-sh/macli    # 装到 ~/.local/bin
 git clone https://github.com/ljh-sh/macli
 cd macli
 swift build -c release
-.release-artifacts/darwin-arm64/bin/macli --help   # 跑过 .x-cmd/release darwin-arm64 之后
 ```
+
+## 一览
+
+```sh
+macli smc temp                              # CPU/GPU 温度（JSON）
+macli monitor --count 10 --interval 1       # 流式 10 个样本给 awk
+macli cal ls                                # 列日历（JSON）
+macli notify send --title "完成" "..."        # 推一条通知
+```
+
+输出 schema：成功 `{"ok": true, ...}`，失败 `{"ok": false, "error": "...", "hint": "..."}`。从不沉默。
 
 ---
 
-## SMC 传感器 —— 核心
+## SMC 传感器
 
-macli 的招牌用例。`macli smc` 读取 macOS 只通过私有 framework 暴露的硬件传感器。
-
-### SMC 是什么？
-
-**System Management Controller（SMC）** 是每台 Mac 内嵌的 Apple 控制器，监控并上报：
-
-- CPU / GPU / SoC die 温度
-- PMU 电压轨（`PPPW`、`PCPC` 等）
-- PMU 电流轨
-- 风扇转速（Intel Mac）
-- 电池状态和功耗
-
-Intel Mac 上，SMC 通过 `IOKit.framework` 私有 AppleSMC API 查询，使用 4 字符 key（`TCXC`、`TG0P` 等）。Apple Silicon（M1–M4）上同样数据迁移到了 HID sensor hub —— key 完全不同（`PMU tdie1`、`PMU tdie2` 等）且未公开。
-
-参考 —— 把这套梳理出来的项目：
-
-- [dkorunic/iSMC](https://github.com/dkorunic/iSMC) —— Go 写的 CLI，Intel + Apple Silicon 全 key 目录
-- [beltex/SMCKit](https://github.com/beltex/SMCKit) —— Swift SMC 库，Intel 时代的经典参考
-- [freedomtan/sensors](https://github.com/freedomtan/sensors) —— 早期 Apple Silicon IOKit 探索
-
-### 为什么不用 Python / PyObjC？
-
-读一个传感器大约要 30 行 C：打开 `AppleSMC` / `AppleHID` IOService，序列化 key，调 `IOConnectCallScalarMethod`，解返回的 struct。key 是私有的，struct 是私有的，调用约定从 Intel 到 Apple Silicon 完全变了。
-
-PyObjC 能调公开 framework，但 SMC 的 key 空间是**私有**的。从 Python 访问意味着 ctypes 级别的 struct 打包，每次 macOS 发布都会坏。没有 `pip install` 的路能跟上 Apple Silicon 的新 key 命名空间。
-
-### 为什么用 macli？
-
-macli 用一个链接到原生 IOKit / HID framework 的 Swift 二进制封装同样的私有 API。二进制小（~400 KB），启动 ~50ms，返回结构化输出：
+招牌用例。`macli smc` 读取 macOS 只通过私有 framework 暴露的硬件传感器。
 
 ```sh
 macli smc temp            # → JSON，所有温度传感器
@@ -115,25 +97,18 @@ macli smc all             # → 全部
 
 ### 设计：agent-oriented
 
-macli 故意保持**笨**。它**不**做：
-
-- 计算"体感温度"之类的派生指标
-- 聚合、平均、滑动窗口
-- 画图、上色、进度条
-- 判断什么是"过热"或"异常"
-
-只返回原始传感器值，到此为止。判断交给调用方 —— 这才是重点。awk、jq、python 处理这些本来就更擅长：
+macli 故意保持**笨**。它不算热指数、不聚合、不画图、不判断什么是"过热"。只返回原始传感器值，到此为止。判断交给调用方：
 
 ```sh
 macli smc temp --tsv | awk -F'\t' '$2 > 80 {print $1, "过热"}'
 macli smc temp --tsv | sort -t$'\t' -k2 -n | tail -5    # 最热的 5 个传感器
 ```
 
-这让 `macli --help` 保持精简（LLM 加载为上下文时省 token），让你能用你已经熟悉的工具。CLI 就是 API；shell 就是粘合层。
+这让 `macli --help` 保持精简（LLM 加载为上下文时省 token）。CLI 就是 API；shell 就是粘合层。
 
 ### `smc86` —— Intel legacy，sunset track
 
-`smc86` 是 Intel Mac 对应版本，接口一致。Intel Mac 完全淘汰后整体移除。
+`smc86` 是 Intel Mac 对应版本，接口一致。Apple Silicon 上返回空（Intel SMC key 空间被清空）。Intel Mac 完全淘汰后整体移除。
 
 ---
 
@@ -155,7 +130,7 @@ macli monitor --count 10 --interval 0.5 --metrics smc_temp \
 
 第一行 header 锁定列顺序；后续行按位置对应。`awk -F'\t'` 是预期的下游。
 
-为什么重要：用 shell 循环轮询（`while; do macli smc temp; sleep 1; done`）每次迭代要付出 ~50ms 二进制启动开销。`monitor` 只付一次，后续采样的边际成本亚毫秒。
+为什么重要：用 shell 循环（`while; do macli smc temp; sleep 1; done`）每次迭代要付出 ~50ms 二进制启动开销。`monitor` 只付一次，后续采样的边际成本亚毫秒。
 
 ---
 
@@ -170,12 +145,6 @@ macli reminder add --list Shopping "买牛奶"
 macli aka set work <calendar-id>            # 给日历 ID 设 alias，方便引用
 ```
 
-为什么不用 `osascript`？
-
-- **osascript 要走 AppleScript + Calendar.app** —— 冷启动要加载 AppleScript 组件、Calendar.app RPC 通道、权限弹窗。首次调用经常卡几秒等用户授权。
-- **macli 直接链 `EventKit.framework`**，通过标准 macOS TCC 弹窗请求一次权限。后续调用全在进程内。
-- **JSON 输出**，不是 AppleScript 的 list 语法 —— `jq` 直接能解析，不用切字符串。
-
 用途：仪表盘、CI 提醒（"下一个会议 5 分钟后开始"）、提醒批量插入、需要稳定日历引用的自动化（`aka`）。
 
 ---
@@ -186,7 +155,7 @@ macli aka set work <calendar-id>            # 给日历 ID 设 alias，方便引
 macli notify send --title "完成" "构建结束"
 ```
 
-封装 `NSUserNotification` 给 shell 脚本用。覆盖 `osascript -e 'display notification'` 能做但脚本化很别扭的场景（参数传递、批量发送）。
+封装 `NSUserNotification` 给 shell 脚本用。覆盖 `osascript -e 'display notification'` 能做但参数化很别扭的场景。
 
 ---
 
@@ -196,51 +165,93 @@ macli notify send --title "完成" "构建结束"
 - **流式命令**（`monitor`）：只 TSV，第一行 header。
 - **错误**：`{"ok": false, "error": "...", "hint": "..."}` —— 从不沉默。
 
-## 代码签名
-
-macli 是 **ad-hoc 签名**（不是 Apple Developer ID）。Homebrew Formula 会自动去掉 `com.apple.quarantine`。手动安装的话，跑一下：
-
-```sh
-xattr -dr com.apple.quarantine /usr/local/bin/macli
-```
-
-## 二进制体积
-
-- 单架构 ~400 KB（arm64 / x86_64）
-- universal ~830 KB（fat Mach-O，arm64 + x86_64）
-- 压缩 ~110 KB arm64 tar.xz / ~130 KB x64 tar.xz / ~222 KB universal tar.xz
-
-单一静态二进制。无 Python runtime，无 PyObjC 桥，无 ctypes 层。
+---
 
 ## FAQ
+
+### 安装与权限
 
 **"无法验证开发者" / "macli cannot be opened because the developer cannot be verified"**
 macli 是 ad-hoc 签名（没有 Apple Developer ID）。直接下载安装的话，去掉隔离属性：
 ```sh
 xattr -dr com.apple.quarantine /usr/local/bin/macli
 ```
-Homebrew Formula 会自动做这一步。
+Homebrew Formula 通过 `post_install` 自动做。
 
 **`brew install macli` 报 "trust" 或拒绝加载 Formula**
-Homebrew 6 对第三方 tap 加了 trust 步骤。跑一次 `brew trust ljh-sh/macli`，再 `brew install macli`。
+Homebrew 6 对第三方 tap 加了 trust 步骤。跑一次 `brew trust ljh-sh/macli`，再 `brew install macli`。这是安全特性，不是 bug。
 
-**`macli cal ls` / `event ls` 第一次调用卡几秒**
-macOS TCC 在弹日历授权对话框。点系统弹窗授权即可，后续调用瞬间返回。错过弹窗的话去 系统设置 → 隐私与安全 → 日历 里改。
+**第一次跑 `macli cal ls` / `event ls` / `reminder` 卡几秒**
+macOS TCC 在弹日历/提醒授权对话框。点系统弹窗授权即可，后续调用瞬间返回。错过弹窗的话，去 系统设置 → 隐私与安全 → 日历（或提醒）里把跑 macli 的终端启用。
+
+### SMC —— 是什么，为什么有 macli
+
+**SMC 是什么？**
+**System Management Controller（SMC）** 是每台 Mac 内嵌的 Apple 控制器，监控并上报 CPU / GPU / SoC die 温度、PMU 电压轨、PMU 电流轨、风扇转速（Intel Mac）、电池状态。
+
+Intel Mac 上，SMC 通过 `IOKit.framework` 私有 AppleSMC API 查询，使用 4 字符 key（`TCXC`、`TG0P` 等）。Apple Silicon（M1–M4）上同样数据迁移到了 HID sensor hub —— key 完全不同（`PMU tdie1`、`PMU tdie2` 等）且未公开。
+
+参考 —— 把这套梳理出来的项目：
+- [dkorunic/iSMC](https://github.com/dkorunic/iSMC) —— Go 写的 CLI，Intel + Apple Silicon 全 key 目录
+- [beltex/SMCKit](https://github.com/beltex/SMCKit) —— Swift SMC 库，Intel 时代的经典参考
+- [freedomtan/sensors](https://github.com/freedomtan/sensors) —— 早期 Apple Silicon IOKit 探索
+
+**为什么不用 Python / PyObjC？**
+读一个传感器大约要 30 行 C：打开 `AppleSMC` / `AppleHID` IOService，序列化 key，调 `IOConnectCallScalarMethod`，解返回的 struct。key 是私有的，struct 是私有的，调用约定从 Intel 到 Apple Silicon 完全变了。
+
+PyObjC 能调公开 framework，但 SMC 的 key 空间是**私有**的。从 Python 访问意味着 ctypes 级别的 struct 打包，每次 macOS 发布都会坏。没有 `pip install` 的路能跟上 Apple Silicon 的新 key 命名空间。
 
 **`macli smc86 ...` 在 Apple Silicon 上返回空**
-正常。`smc86` 查的是 Intel Mac 的 SMC key 空间，Apple Silicon 上被清空了。M 系列 Mac 用 `macli smc`（不是 `smc86`）。`smc86` 只为 Intel Mac 保留，Intel 淘汰后整体移除。
+正常。`smc86` 查的是 Intel Mac 的 SMC key 空间，Apple Silicon 上被清空了。M 系列 Mac 用 `macli smc`（不是 `smc86`）。
 
-**macli 能跑在 Linux / Windows 吗？**
-不能。它封装的是 Apple 私有 framework（IOKit、HID、EventKit、Speech），只在 macOS 上存在。
+**macli 跟 iStats / smcFanControl / stats / iSMC / SMCKit 有什么区别？**
+- [iStats](https://github.com/Chris911/iStats) —— Ruby gem，仅 Intel，最后版本 2018。偏 GUI。
+- [smcFanControl](https://github.com/hholtmann/smcFanControl) —— 设最小风扇转速的 macOS app。GUI。
+- [stats](https://github.com/exelban/stats) —— macOS 菜单栏仪表盘。GUI。
+- [iSMC](https://github.com/dkorunic/iSMC) —— Go CLI。最接近的同类，但 Go runtime 给二进制加 ~5 MB。
+- [SMCKit](https://github.com/beltex/SMCKit) —— Swift 库，仅 Intel。无 CLI 流式，无 EventKit。
+- **macli** —— Swift CLI，专为 shell 管道和 LLM agent 设计。只 JSON/TSV，无 GUI，无 Ruby/Go runtime，Apple Silicon 一等公民。列表中体积最小（~400 KB stripped）。
+
+### EventKit 内部
+
+**为什么 `macli cal ls` 比 `osascript` 快？**
+osascript 要走 AppleScript → Calendar.app RPC 通道 → 权限弹窗。每次冷启动都要加载 AppleScript 组件。macli 直接链 `EventKit.framework`，通过标准 TCC 弹窗请求一次权限，后续调用全在进程内。
+
+**为什么用 JSON 不用 AppleScript list 语法？**
+AppleScript 返回人类可读的字符串如 `{calendar "Work", calendar "Home"}`，解析要 regex 切本地化字符串。JSON 能被 `jq`、python、awk、所有 LLM tool use 接口直接解析，字段名稳定，跟系统语言无关。
+
+**macli 会改我的日历数据吗？**
+读命令（`cal ls`、`event ls`）永不触碰状态。写命令（`cal add`、`event add`、`reminder add`）只在你显式调用时跑，参数精确到你传的那些。macli 从不自动同步、不删除、不修改。
+
+### 兼容性
+
+**Linux / Windows？**
+不能。macli 封装的是 Apple 私有 framework（IOKit、HID、EventKit、UserNotifications），只在 macOS 上存在。
 
 **需要 `sudo` 吗？**
 不需要。所有子命令以当前用户身份运行。传感器读取走用户态 IOKit / HID API。
 
-**跟 iStats / smcFanControl / stats 有什么区别？**
-那些是终端用户工具（Ruby gem、风扇控制 app、菜单栏 GUI）。macli 是**给脚本和 agent 用的 CLI** —— JSON/TSV 输出、无 GUI、无 Ruby runtime，设计为从 shell 管道和 LLM tool use 调用。
+**Apple Silicon vs Intel？**
+都支持，单一 universal binary。Apple Silicon 用 `macli smc`；Intel 用 `macli smc86`。二进制完全一样，子命令决定走哪条传感器路径。
 
-**有 Python 封装吗？**
-不需要。`subprocess.run(["macli", "smc", "temp"], ...)` + `json.loads` 三行就拿到完整 schema。再加一层封装只会把它藏起来。
+### 内部
+
+**二进制体积**
+单架构 ~400 KB（arm64 / x86_64），universal ~830 KB（fat Mach-O），arm64 tar.xz ~110 KB。单一静态二进制 —— 无 Python runtime，无 PyObjC 桥，无 ctypes 层。
+
+**代码签名**
+Ad-hoc。不是 Apple Developer ID（要 $99/年 + notarize，收益边际）。Homebrew Formula 自动去 `com.apple.quarantine`。手动安装跑一次 `xattr -dr`。
+
+**构建可复现吗？**
+可以，有 Xcode/LLVM 版本锁定的 caveat。构建硬化（SOURCE_DATE_EPOCH、ZERO_AR_DATE、确定性 mtime、RPATH 删除）在 `.x-cmd/release.common.sh`。设计笔记在 [`macli-mneme/story/260616.reproducible-build`](https://github.com/ljh-sh/macli-mneme/tree/main/story/260616.reproducible-build)。
+
+**为什么把语音识别（`macli speech recognize`）移除了？**
+`SFSpeechRecognizer` 要求调用方 bundle 在 Info.plist 里声明 `NSSpeechRecognitionUsageDescription`。SwiftPM 编译的 CLI 二进制没有 Info.plist 也没有 bundle id，macOS TCC 拒绝授权，进程 SIGABRT。没有干净的 fix 除非把 macli 包成 `.app` bundle，而这会让发布流程为一个已经被 [sveinbjornt/hear](https://github.com/sveinbjornt/hear)（签名 + notarize + BSD）解决得很好的功能复杂化。完整复盘在 [`macli-mneme#16`](https://github.com/ljh-sh/macli-mneme/issues/16)。
+
+**为什么不内置聚合 / 告警？**
+聚合（avg、max、滑动窗口）和告警（阈值 → notify）应该在 awk/jq/python 里做，那里你控制语义。塞进 macli 意味着每个新统计都要加新 flag，`--help` 会膨胀到 LLM 加载为上下文的成本不划算。见上面"设计：agent-oriented"。
+
+---
 
 ## License
 
