@@ -145,9 +145,9 @@ xattr -dr com.apple.quarantine /usr/local/bin/macli
 
 ## Binary size
 
-- ~370 KB per arch (arm64 / x86_64)
-- ~220 KB universal (fat Mach-O)
-- ~105 KB compressed (tar.xz)
+- ~400 KB per arch (arm64 / x86_64)
+- ~830 KB universal (fat Mach-O, arm64 + x86_64)
+- ~110 KB arm64 tar.xz / ~130 KB x64 tar.xz / ~222 KB universal tar.xz
 
 ## License
 
