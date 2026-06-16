@@ -18,8 +18,8 @@ enum CalCmd: Cmd {
             TldrItem(desc: "List all calendars", cmd: "macli cal ls"),
             TldrItem(desc: "List calendars and reminder lists", cmd: "macli cal la"),
             TldrItem(desc: "Create a new calendar", cmd: "macli cal add --name Work --color #FF0000"),
-            TldrItem(desc: "Delete a calendar", cmd: "macli cal rm <id>"),
-            TldrItem(desc: "Delete a reminder list", cmd: "macli cal rm <id> --type reminder"),
+            TldrItem(desc: "Delete a calendar", cmd: "macli cal rm <id> --yes"),
+            TldrItem(desc: "Delete a reminder list", cmd: "macli cal rm <id> --type reminder --yes"),
         ]
     }
 }
@@ -76,10 +76,14 @@ enum CalRm: Cmd {
         desc: "Delete a calendar",
         opts: [
             OptMeta(name: "--type", desc: "Type: event or reminder (default: event)", `default`: "event"),
+            OptMeta(name: "--yes", type: Bool.self, desc: "Confirm destructive deletion"),
         ],
         args: [ArgMeta(name: "id", desc: "Calendar ID")],
         run: { p in
             let id = requireArg(p, 0, "Calendar ID")
+            guard p.opt("--yes") == true else {
+                cmdError("refusing to delete calendar without --yes")
+            }
             let type: String = p.opt("--type") ?? "event"
             let acc = AccessCtrl()
             if type == "reminder" { try acc.askReminder() } else { try acc.askCal() }
