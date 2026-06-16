@@ -84,28 +84,6 @@ struct NotifyInfo {
     var scheduledAt: String?
 }
 
-// MARK: Speech Models
-
-struct SpeechLang {
-    var id: String
-    var code: String
-    var name: String
-}
-
-struct VoiceInfo {
-    var id: String
-    var name: String
-    var lang: String
-    var quality: Int
-}
-
-struct TranscriptInfo {
-    var text: String
-    var file: String
-    var locale: String
-    var isFinal: Bool
-}
-
 // MARK: Generic Result
 
 enum R<T> {

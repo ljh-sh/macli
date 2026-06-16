@@ -24,8 +24,6 @@ enum MacliRoot: Cmd {
             "aka": AkaCmd.self,
             "monitor": MonitorCmd.self,
             "notify": NotifyCmd.self,
-            "speech": SpeechCmd.self,
-            "speak": SpeakCmd.self,
             "smc": SmcCmd.self,
             "smc86": Smc86Cmd.self,
         ]

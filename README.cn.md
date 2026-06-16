@@ -2,7 +2,7 @@
 
 > 面向 AI agent 的 macOS 系统工具。原生 Apple framework。AI 友好的 JSON/TSV 输出。
 
-**macli** 是一个 Swift 编译的小 CLI，通过你 GUI 应用同样的原生 Apple framework 暴露 macOS 系统状态 —— SMC 传感器、流式监控、日历/提醒、语音。单一二进制，JSON/TSV 输出，为 LLM agent 和 shell 脚本同样设计。
+**macli** 是一个 Swift 编译的小 CLI，通过你 GUI 应用同样的原生 Apple framework 暴露 macOS 系统状态 —— SMC 传感器、流式监控、日历/提醒、通知。单一二进制，JSON/TSV 输出，为 LLM agent 和 shell 脚本同样设计。
 
 镜像：[github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg.org/ljh-sh/macli](https://codeberg.org/ljh-sh/macli)
 
@@ -11,7 +11,7 @@
 一句话 prompt —— 直接粘贴到 Claude Code、Cursor 或任意 agent 的 system prompt：
 
 ```md
-若 `macli` 未安装则先装：`brew install ljh-sh/macli/macli`。用它取 macOS 系统状态（传感器 / 日历 / 语音 / 通知）。输出为 JSON，检查 `ok` 字段。子命令列表 `macli --help`。
+若 `macli` 未安装则先装：`brew install ljh-sh/macli/macli`。用它取 macOS 系统状态（传感器 / 日历 / 提醒 / 通知）。输出为 JSON，检查 `ok` 字段。子命令列表 `macli --help`。
 ```
 
 ## 安装
@@ -180,16 +180,13 @@ macli aka set work <calendar-id>            # 给日历 ID 设 alias，方便引
 
 ---
 
-## 通知 / TTS / 语音
+## 通知
 
 ```sh
 macli notify send --title "完成" "构建结束"
-macli speak text "Hello"
-macli speak voices                          # 列出 180 个语音
-macli speech langs                          # 列出 63 种识别语言
 ```
 
-覆盖 `osascript -e 'display notification'` / `say` 能做但脚本化很别扭的场景（语音枚举、批量发送）。`speech langs` 枚举 `SFSpeechRecognizer.supportedLocales()` 供参考。
+封装 `NSUserNotification` 给 shell 脚本用。覆盖 `osascript -e 'display notification'` 能做但脚本化很别扭的场景（参数传递、批量发送）。
 
 ---
 

@@ -157,22 +157,4 @@ extension NotifyInfo {
     }
 }
 
-extension SpeechLang {
-    func toDict() -> [String: Any] {
-        ["identifier": id, "language": code, "name": name]
-    }
-}
-
-extension VoiceInfo {
-    func toDict() -> [String: Any] {
-        ["identifier": id, "name": name, "language": lang, "quality": quality]
-    }
-}
-
-extension TranscriptInfo {
-    func toDict() -> [String: Any] {
-        ["text": text, "file": file, "locale": locale, "isFinal": isFinal]
-    }
-}
-
 

@@ -2,7 +2,7 @@
 
 > macOS system tools for AI agents. Native Apple frameworks. AI-friendly JSON/TSV output.
 
-**macli** is a small Swift CLI that exposes macOS system state — SMC sensors, streaming monitor, calendar/reminders, speech — via the same native Apple frameworks your GUI apps use. Single binary, JSON/TSV output, designed to be driven by LLM agents and shell scripts alike.
+**macli** is a small Swift CLI that exposes macOS system state — SMC sensors, streaming monitor, calendar/reminders, notifications — via the same native Apple frameworks your GUI apps use. Single binary, JSON/TSV output, designed to be driven by LLM agents and shell scripts alike.
 
 Mirrors: [github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg.org/ljh-sh/macli](https://codeberg.org/ljh-sh/macli)
 
@@ -11,7 +11,7 @@ Mirrors: [github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg
 One-line prompt — paste into Claude Code, Cursor, or any agent's system prompt:
 
 ```md
-Install `macli` if missing: `brew install ljh-sh/macli/macli`. Use it for macOS system state (sensors / calendar / speech / notifications). JSON output, check the `ok` field. Run `macli --help` to list subcommands.
+Install `macli` if missing: `brew install ljh-sh/macli/macli`. Use it for macOS system state (sensors / calendar / reminders / notifications). JSON output, check the `ok` field. Run `macli --help` to list subcommands.
 ```
 
 ## Install
@@ -180,16 +180,13 @@ Use cases: dashboards, CI notifiers ("next event in 5 min"), reminder batching, 
 
 ---
 
-## Notifications / TTS / Speech
+## Notifications
 
 ```sh
 macli notify send --title "Done" "build finished"
-macli speak text "Hello"
-macli speak voices                          # list 180 voices
-macli speech langs                          # list 63 recognition languages
 ```
 
-These cover the cases where `osascript -e 'display notification'` / `say` work but are awkward to script (voice enumeration, batch sends). `speech langs` enumerates `SFSpeechRecognizer.supportedLocales()` for reference.
+Wraps `NSUserNotification` for shell scripts. Covers the case where `osascript -e 'display notification'` works but is awkward to script (parameter passing, batch sends).
 
 ---
 
