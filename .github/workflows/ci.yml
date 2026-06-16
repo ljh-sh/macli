@@ -21,4 +21,6 @@ jobs:
           swift --version
 
       - name: Build and test
+        env:
+          MACLI_SKIP_SENSOR_DATA: 1
         run: ./runtest
