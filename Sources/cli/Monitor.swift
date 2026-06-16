@@ -1,5 +1,7 @@
 import Foundation
 
+private var gMonitorCancelled: Int32 = 0
+
 enum MonitorCmd: Cmd {
     static let meta = CmdMeta(
         name: "monitor",
@@ -64,17 +66,14 @@ enum MonitorCmd: Cmd {
             }
             print(header)
 
-            // SIGINT handler: flush and exit cleanly
-            signal(SIGINT) { _ in
-                exit(0)
-            }
-            signal(SIGTERM) { _ in
-                exit(0)
-            }
+            // SIGINT/SIGTERM: set a flag so the current sample is flushed before exit.
+            gMonitorCancelled = 0
+            signal(SIGINT) { _ in gMonitorCancelled = 1 }
+            signal(SIGTERM) { _ in gMonitorCancelled = 1 }
 
             // Stream loop
             var count = 0
-            while maxCount == nil || count < maxCount! {
+            while (maxCount == nil || count < maxCount!) && gMonitorCancelled == 0 {
                 let ts = String(format: "%.3f", Date().timeIntervalSince1970)
                 var line = ts
 
