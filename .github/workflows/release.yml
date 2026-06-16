@@ -10,15 +10,18 @@ on:
         required: true
         default: v0.0.0-test
 
-permissions:
-  contents: write
+permissions: read-all
 
 jobs:
   build:
     name: Build (arm64 + x64 on Apple Silicon)
     runs-on: macos-14
+    permissions:
+      contents: read
+      actions: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Select Xcode
         run: |
@@ -27,28 +30,21 @@ jobs:
           xcrun --show-sdk-version
 
       - name: Build & package both arches
-        run: |
-          # Deterministic build env (mirrors .x-cmd/release.common.sh)
-          export SOURCE_DATE_EPOCH=1700000000
-          export ZERO_AR_DATE=1
-          export TZ=UTC
-          export LC_ALL=C
-
-          # Cross-compile both arches from a single Apple Silicon runner.
-          # No need for separate macos-13 runner: SwiftPM --arch x86_64
-          # uses Xcode's bundled x86_64 toolchain for native cross-compile.
-          .x-cmd/release release
+        env:
+          SOURCE_DATE_EPOCH: 1700000000
+          ZERO_AR_DATE: 1
+          TZ: UTC
+          LC_ALL: C
+        run: .x-cmd/release release
 
       - name: Verify reproducibility & no privacy leaks
-        run: |
-          .x-cmd/release verify darwin-arm64
-          # x64 verify skipped (cross-compile produces same inputs, just different arch)
+        run: .x-cmd/release verify darwin-arm64
 
       - name: List artifacts
         run: ls -la .release-artifacts/
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: release-artifacts
           path: |
@@ -62,20 +58,28 @@ jobs:
     name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Determine tag
         id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          REF: ${{ github.ref }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "name=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "name=$INPUT_TAG" >> "$GITHUB_OUTPUT"
           else
-            echo "name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "name=${REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: release-artifacts
           path: artifacts
@@ -84,7 +88,7 @@ jobs:
         run: ls -laR artifacts
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ steps.tag.outputs.name }}
           name: ${{ steps.tag.outputs.name }}
