@@ -6,6 +6,14 @@
 
 镜像：[github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg.org/ljh-sh/macli](https://codeberg.org/ljh-sh/macli)
 
+## 面向 AI agent
+
+一句话 prompt —— 直接粘贴到 Claude Code、Cursor 或任意 agent 的 system prompt：
+
+```md
+`macli` 已安装。传感器：`macli smc temp|volt|curr|all`。流式采样：`macli monitor --count N --interval S --metrics smc_temp,smc_curr`。日历/日程/提醒：`macli cal ls`、`macli event ls --today`、`macli reminder add --list X "内容"`。通知/TTS/语音：`macli notify send "内容"`、`macli speak text "..."`、`macli speech recognize file.m4a`。输出为 JSON，schema `{"ok": bool, ...}`；错误从不沉默。
+```
+
 ## 安装
 
 ### Homebrew（推荐）
@@ -62,39 +70,6 @@ macli monitor --count 10 --interval 0.5 --metrics smc_temp \
 macli cal ls                                      # 列日历
 macli notify send --title "完成" "构建结束"
 ```
-
-## 面向 AI agent
-
-macli 的设计目标：让 LLM agent 用一个工具就能驱动 macOS 系统状态。把下面这段塞进 system prompt、AGENTS.md 或工具描述里：
-
-```md
-你可以通过 shell 调用 `macli` —— 一个返回结构化 JSON 的 macOS CLI。
-务必解析 JSON 并先检查 `ok` 字段再决定后续动作。
-
-- 温度 / 电压 / 电流传感器    : `macli smc temp|volt|curr|all`
-- 时间序列流式采样              : `macli monitor --count N --interval S --metrics smc_temp,smc_curr`
-- 日历 / 日程 / 提醒             : `macli cal ls`、`macli event ls --today`、`macli reminder add --list X "内容"`
-- 通知 / TTS / 语音转写          : `macli notify send "内容"`、`macli speak text "..."`、`macli speech recognize file.m4a`
-
-成功 schema: `{"ok": true, ...}`
-失败 schema: `{"ok": false, "error": "...", "hint": "..."}`
-出错从不沉默。快照命令加 `--tsv` 切到 awk 友好的 TSV。
-```
-
-agent 可直接跑的示例：
-
-```sh
-macli smc temp                                    # → {"ok":true,"sensors":[{"name":"PMU tdie1","value":57.5,"unit":"°C"}],...}
-macli cal ls                                      # → JSON 列出所有日历
-macli monitor --count 5 --interval 1 --metrics smc_temp   # → 5 行 TSV 温度样本
-macli notify send --title "Build" "finished"      # → {"ok":true}；弹一条 macOS 通知
-```
-
-为什么 agent 用 macli 比 `osascript` / `system_profiler` 划算：
-- **结构化输出**：每个快照命令都是稳定 schema 的 JSON，不用 regex 解析人类可读的散文
-- **单一二进制**：传感器 / 日历 / 语音 / 通知一个工具搞定，少加载一堆工具描述
-- **流式**：`monitor` 增量返回 TSV 行，agent 可以 1 Hz 采样而不用每次 fork 新进程
-- **冷启动快**：Swift 二进制 <20ms，osascript 每次约 200ms
 
 ## 子命令
 

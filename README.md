@@ -6,6 +6,14 @@
 
 Mirrors: [github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg.org/ljh-sh/macli](https://codeberg.org/ljh-sh/macli)
 
+## For AI agents
+
+One-line prompt — paste into Claude Code, Cursor, or any agent's system prompt:
+
+```md
+`macli` is installed. Sensors: `macli smc temp|volt|curr|all`. Streaming: `macli monitor --count N --interval S --metrics smc_temp,smc_curr`. Calendar/event/reminder: `macli cal ls`, `macli event ls --today`, `macli reminder add --list X "text"`. Notify/TTS/speech: `macli notify send "text"`, `macli speak text "..."`, `macli speech recognize file.m4a`. Output is JSON with `{"ok": bool, ...}`; errors never silent.
+```
+
 ## Install
 
 ### Homebrew (recommended)
@@ -62,39 +70,6 @@ macli monitor --count 10 --interval 0.5 --metrics smc_temp \
 macli cal ls                                      # list calendars
 macli notify send --title "Done" "build finished"
 ```
-
-## For AI agents
-
-macli is designed so that an LLM agent can drive macOS system state with a single tool. Drop this block into a system prompt, AGENTS.md, or tool description:
-
-```md
-You have access to `macli`, a macOS CLI that returns structured JSON for system state.
-Call it via shell. Always parse the JSON and check `ok` before acting on the result.
-
-- Temperature / voltage / current sensors : `macli smc temp|volt|curr|all`
-- Stream samples over time                : `macli monitor --count N --interval S --metrics smc_temp,smc_curr`
-- Calendars / events / reminders          : `macli cal ls`, `macli event ls --today`, `macli reminder add --list X "text"`
-- Push notification / TTS / transcribe    : `macli notify send "text"`, `macli speak text "..."`, `macli speech recognize file.m4a`
-
-Success schema: `{"ok": true, ...}`
-Error schema  : `{"ok": false, "error": "...", "hint": "..."}`
-Never silent on errors. `--tsv` switches snapshot commands to awk-friendly TSV.
-```
-
-Example one-liners an agent can run directly:
-
-```sh
-macli smc temp                                    # → {"ok":true,"sensors":[{"name":"PMU tdie1","value":57.5,"unit":"°C"}],...}
-macli cal ls                                      # → list of calendars as JSON
-macli monitor --count 5 --interval 1 --metrics smc_temp   # → 5 TSV rows of temp samples
-macli notify send --title "Build" "finished"      # → {"ok":true}; pushes a macOS notification
-```
-
-Why macli over `osascript` / `system_profiler` for agents:
-- **Structured output**: every snapshot command returns JSON with a stable schema — no regex parsing of human prose.
-- **Single binary**: one tool for sensors, calendar, speech, notifications. Fewer tool descriptions to load.
-- **Streaming**: `monitor` returns TSV rows incrementally; agent can sample at 1 Hz without spawning a new process per poll.
-- **Fast cold start**: Swift binary (<20ms), vs osascript ~200ms per call.
 
 ## Subcommands
 
