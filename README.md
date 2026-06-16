@@ -1,5 +1,9 @@
 # macli
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/ljh-sh/macli/badge)](https://scorecard.dev/)
+[![CI](https://github.com/ljh-sh/macli/actions/workflows/ci.yml/badge.svg)](https://github.com/ljh-sh/macli/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.txt)
+
 > Minimal context with maximum flexibility — macOS system tools for AI agents. Native Apple frameworks. AI-friendly JSON/TSV output.
 
 **macli** turns macOS system internals into a clean CLI. SMC sensors, streaming monitor, calendar/reminders, notifications — all callable from shell pipes or LLM agents, all JSON/TSV. One ~400 KB Swift binary. No Python runtime, no osascript overhead, no GUI.

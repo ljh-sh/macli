@@ -1,5 +1,9 @@
 # macli
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/ljh-sh/macli/badge)](https://scorecard.dev/)
+[![CI](https://github.com/ljh-sh/macli/actions/workflows/ci.yml/badge.svg)](https://github.com/ljh-sh/macli/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.txt)
+
 > 最小上下文，最大灵活性 —— 面向 AI agent 的 macOS 系统工具。原生 Apple framework。AI 友好的 JSON/TSV 输出。
 
 **macli** 把 macOS 系统内部能力做成干净的 CLI。SMC 传感器、流式监控、日历/提醒、通知 —— 全都能从 shell 管道或 LLM agent 调用，全是 JSON/TSV。单一 ~400 KB Swift 二进制。无 Python runtime，无 osascript 开销，无 GUI。
