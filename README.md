@@ -277,6 +277,12 @@ Aggregation (avg, max, rolling window) and alerting (threshold → notify) belon
 
 ---
 
+## Changelog
+
+See [`changelog/`](changelog/) for versioned release notes, starting with [`v0.0.0.md`](changelog/v0.0.0.md).
+
+---
+
 ## License
 
 Apache 2.0 — see [LICENSE.txt](LICENSE.txt).

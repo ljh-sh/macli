@@ -277,6 +277,12 @@ Ad-hoc。不是 Apple Developer ID（要 $99/年 + notarize，收益边际）。
 
 ---
 
+## 更新日志
+
+版本化发布说明见 [`changelog/`](changelog/)，从 [`v0.0.0.cn.md`](changelog/v0.0.0.cn.md) 开始。
+
+---
+
 ## License
 
 Apache 2.0 —— 见 [LICENSE.txt](LICENSE.txt)。
