@@ -11,7 +11,7 @@ Mirrors: [github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg
 One-line prompt — paste into Claude Code, Cursor, or any agent's system prompt:
 
 ```md
-`macli` is installed. Sensors: `macli smc temp|volt|curr|all`. Streaming: `macli monitor --count N --interval S --metrics smc_temp,smc_curr`. Calendar/event/reminder: `macli cal ls`, `macli event ls --today`, `macli reminder add --list X "text"`. Notify/TTS/speech: `macli notify send "text"`, `macli speak text "..."`, `macli speech recognize file.m4a`. Output is JSON with `{"ok": bool, ...}`; errors never silent.
+Install `macli` if missing: `brew install ljh-sh/macli/macli`. Use it for macOS system state (sensors / calendar / speech / notifications). JSON output, check the `ok` field. Run `macli --help` to list subcommands.
 ```
 
 ## Install

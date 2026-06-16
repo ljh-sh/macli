@@ -11,7 +11,7 @@
 一句话 prompt —— 直接粘贴到 Claude Code、Cursor 或任意 agent 的 system prompt：
 
 ```md
-`macli` 已安装。传感器：`macli smc temp|volt|curr|all`。流式采样：`macli monitor --count N --interval S --metrics smc_temp,smc_curr`。日历/日程/提醒：`macli cal ls`、`macli event ls --today`、`macli reminder add --list X "内容"`。通知/TTS/语音：`macli notify send "内容"`、`macli speak text "..."`、`macli speech recognize file.m4a`。输出为 JSON，schema `{"ok": bool, ...}`；错误从不沉默。
+若 `macli` 未安装则先装：`brew install ljh-sh/macli/macli`。用它取 macOS 系统状态（传感器 / 日历 / 语音 / 通知）。输出为 JSON，检查 `ok` 字段。子命令列表 `macli --help`。
 ```
 
 ## 安装
