@@ -1,8 +1,8 @@
 # macli
 
-> macOS native binary for things shell/python can't do.
+> macOS system tools CLI. Native Swift binary, JSON/TSV output, zero runtime dependencies.
 
-**macli** is a small Swift-compiled CLI that exposes private macOS APIs (HID, IOKit, Speech, EventKit) which are painful or impossible to call from Python/-shell. It is **not** a "every macOS tool combined" — only the parts where `subprocess` + `osascript` + PyObjC genuinely struggle.
+**macli** exposes parts of macOS that are normally hard to reach from a shell — SMC sensors, streaming monitor, calendar/reminders, speech recognition. Single binary, fast startup, output designed for both humans and pipes.
 
 ## Install
 
@@ -41,9 +41,20 @@ swift build -c release
 .release-artifacts/darwin-arm64/bin/macli --help   # after .x-cmd/release darwin-arm64
 ```
 
+## Quickstart
+
+```sh
+macli smc temp                                    # CPU/GPU temperatures as JSON
+macli smc temp --tsv                              # TSV for awk
+macli monitor --count 10 --interval 0.5 --metrics smc_temp \
+  | awk -F'\t' 'NR>1 {sum+=$2; n++} END {print "avg:", sum/n}'
+macli cal ls                                      # list calendars
+macli notify send --title "Done" "build finished"
+```
+
 ## Subcommands
 
-### `smc` — Apple Silicon SMC sensors (HID)
+### `smc` — Apple Silicon SMC sensors
 
 ```sh
 macli smc temp        # temperatures (JSON, default)
@@ -113,12 +124,6 @@ macli ships with **ad-hoc signature** (not Apple Developer ID). The Homebrew for
 xattr -dr com.apple.quarantine /usr/local/bin/macli
 ```
 
-## What macli is not
-
-If a feature can be done with `subprocess` + system CLI (`pmset`, `system_profiler`, `ioreg`, `airport`, `networksetup`), `osascript`, or clean PyObjC, it belongs to [`x-bash/mac`](https://github.com/x-bash/mac) — not macli.
-
-macli's scope: private frameworks, HID/IOKit/kext communication, reverse-engineered protocols, high-frequency polling.
-
 ## Binary size
 
 - ~370 KB per arch (arm64 / x86_64)
@@ -132,9 +137,4 @@ Apache 2.0 — see [LICENSE.txt](LICENSE.txt).
 ## Development
 
 - [DEV.md](DEV.md) — build, test, release commands
-- Dev roadmap, stories, design decisions live in [`macli-mneme`](https://github.com/ljh-sh/macli-mneme) (private)
-
-## Related
-
-- [`x-bash/mac`](https://github.com/x-bash/mac) — script layer that calls macli
-- [`x-bash/gpu`](https://github.com/x-bash/gpu), [`x-bash/cpu`](https://github.com/x-bash/cpu), [`x-bash/display`](https://github.com/x-bash/display) — ctypes hacks that macli is gradually replacing
+- Issue tracker and design notes: [`macli-mneme`](https://github.com/ljh-sh/macli-mneme) (private)

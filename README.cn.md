@@ -1,8 +1,8 @@
 # macli
 
-> macOS 原生二进制，专做 shell/python 做不到的事。
+> macOS 系统工具 CLI。原生 Swift 二进制，JSON/TSV 输出，零运行时依赖。
 
-**macli** 是一个用 Swift 编译的 CLI，暴露私有 macOS API（HID / IOKit / Speech / EventKit）—— 这些 API 用 Python / shell 调起来要么痛苦要么根本调不动。它**不是**「所有 macOS 工具的大杂烩」，只覆盖 `subprocess` + `osascript` + PyObjC 真的搞不定的部分。
+**macli** 暴露 macOS 上 shell 通常难以触及的部分 —— SMC 传感器、流式监控、日历/提醒、语音识别。单一二进制，启动快，输出既给人看也适合管道处理。
 
 ## 安装
 
@@ -41,9 +41,20 @@ swift build -c release
 .release-artifacts/darwin-arm64/bin/macli --help   # 跑过 .x-cmd/release darwin-arm64 之后
 ```
 
+## 快速上手
+
+```sh
+macli smc temp                                    # CPU/GPU 温度（JSON）
+macli smc temp --tsv                              # TSV 给 awk
+macli monitor --count 10 --interval 0.5 --metrics smc_temp \
+  | awk -F'\t' 'NR>1 {sum+=$2; n++} END {print "avg:", sum/n}'
+macli cal ls                                      # 列日历
+macli notify send --title "完成" "构建结束"
+```
+
 ## 子命令
 
-### `smc` — Apple Silicon SMC 传感器（HID）
+### `smc` — Apple Silicon SMC 传感器
 
 ```sh
 macli smc temp        # 温度（默认 JSON）
@@ -113,12 +124,6 @@ macli 是 **ad-hoc 签名**（不是 Apple Developer ID）。Homebrew Formula �
 xattr -dr com.apple.quarantine /usr/local/bin/macli
 ```
 
-## macli 不是什么
-
-如果某个功能可以用 `subprocess` + 系统 CLI（`pmset` / `system_profiler` / `ioreg` / `airport` / `networksetup`）、`osascript`、或干净的 PyObjC 实现，那它归 [`x-bash/mac`](https://github.com/x-bash/mac) —— 不归 macli。
-
-macli 的范围：私有框架、HID / IOKit / kext 通信、反向工程协议、高频轮询。
-
 ## 二进制体积
 
 - 单架构 ~370 KB（arm64 / x86_64）
@@ -132,9 +137,4 @@ Apache 2.0 —— 见 [LICENSE.txt](LICENSE.txt)。
 ## 开发
 
 - [DEV.md](DEV.md) —— 构建 / 测试 / 发布命令
-- 开发纲领、roadmap、设计决策放在 [`macli-mneme`](https://github.com/ljh-sh/macli-mneme)（私有）
-
-## 相关项目
-
-- [`x-bash/mac`](https://github.com/x-bash/mac) —— 调用 macli 的脚本层
-- [`x-bash/gpu`](https://github.com/x-bash/gpu)、[`x-bash/cpu`](https://github.com/x-bash/cpu)、[`x-bash/display`](https://github.com/x-bash/display) —— macli 正在逐步替换的 ctypes hack
+- 设计笔记与 issue 跟踪：[`macli-mneme`](https://github.com/ljh-sh/macli-mneme)（私有）
