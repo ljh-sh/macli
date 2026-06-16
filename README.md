@@ -72,6 +72,16 @@ Output schema: `{"ok": true, ...}` on success, `{"ok": false, "error": "...", "h
 
 ---
 
+## Roadmap
+
+- [x] SMC sensor snapshot, streaming monitor, EventKit, notifications
+- [ ] Battery health (`macli battery`)
+- [ ] SSD health (`macli ssd`)
+
+See [ROADMAP.md](ROADMAP.md) for details.
+
+---
+
 ## SMC sensors
 
 The headline use case. `macli smc` reads hardware sensors that macOS exposes only through private frameworks.

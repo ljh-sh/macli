@@ -72,6 +72,16 @@ macli notify send --title "完成" "..."        # 推一条通知
 
 ---
 
+## 路线图
+
+- [x] SMC 传感器快照、流式监控、EventKit、通知
+- [ ] 电池健康（`macli battery`）
+- [ ] SSD 健康（`macli ssd`）
+
+详情见 [ROADMAP.md](ROADMAP.md)。
+
+---
+
 ## SMC 传感器
 
 招牌用例。`macli smc` 读取 macOS 只通过私有 framework 暴露的硬件传感器。
