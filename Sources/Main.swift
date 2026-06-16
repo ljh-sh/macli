@@ -23,7 +23,6 @@ enum MacliRoot: Cmd {
             "reminder": ReminderCmd.self,
             "aka": AkaCmd.self,
             "monitor": MonitorCmd.self,
-            "notify": NotifyCmd.self,
             "smc": SmcCmd.self,
             "smc86": Smc86Cmd.self,
         ]

@@ -145,16 +145,4 @@ extension RouteInfo {
     }
 }
 
-extension NotifyInfo {
-    func toDict() -> [String: Any] {
-        var d: [String: Any] = [
-            "title": title,
-            "body": body,
-            "sound": sound
-        ]
-        if let s = scheduledAt { d["scheduledAt"] = s }
-        return d
-    }
-}
-
 

@@ -6,7 +6,7 @@
 
 > Minimal context with maximum flexibility — macOS system tools for AI agents. Native Apple frameworks. AI-friendly JSON/TSV output.
 
-**macli** turns macOS system internals into a clean CLI. SMC sensors, streaming monitor, calendar/reminders, notifications — all callable from shell pipes or LLM agents, all JSON/TSV. One ~400 KB Swift binary. No Python runtime, no osascript overhead, no GUI.
+**macli** turns macOS system internals into a clean CLI. SMC sensors, streaming monitor, calendar/reminders — all callable from shell pipes or LLM agents, all JSON/TSV. One ~400 KB Swift binary. No Python runtime, no osascript overhead, no GUI.
 
 Use it when you (or your AI agent) need to ask macOS something that `system_profiler` / `ioreg` / `osascript` either can't answer or answer badly: *CPU die temperature right now*, *stream 1 Hz sensor readings into awk*, *today's calendar as JSON*.
 
@@ -17,7 +17,7 @@ Mirrors: [github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg
 Minimal context with maximum flexibility — paste this one-line prompt into Claude Code, Cursor, or any agent's system prompt:
 
 ```md
-Use `macli` for macOS system state (sensors / calendar / reminders / notifications). Install if missing: `brew install ljh-sh/cli/macli`. JSON output, check `ok`. Run `macli --help` for subcommands.
+Use `macli` for macOS system state (sensors / calendar / reminders). Install if missing: `brew install ljh-sh/cli/macli`. JSON output, check `ok`. Run `macli --help` for subcommands.
 ```
 
 ## Install
@@ -69,7 +69,6 @@ swift build -c release
 macli smc temp                              # CPU/GPU temps as JSON
 macli monitor --count 10 --interval 1       # stream 10 samples to awk
 macli cal ls                                # list calendars as JSON
-macli notify send --title "Done" "..."      # push a notification
 ```
 
 Output schema: `{"ok": true, ...}` on success, `{"ok": false, "error": "...", "hint": "..."}` on failure. Never silent.
@@ -78,7 +77,7 @@ Output schema: `{"ok": true, ...}` on success, `{"ok": false, "error": "...", "h
 
 ## Roadmap
 
-- [x] SMC sensor snapshot, streaming monitor, EventKit, notifications
+- [x] SMC sensor snapshot, streaming monitor, EventKit
 - [ ] Battery health (`macli battery`)
 - [ ] SSD health (`macli ssd`)
 
@@ -163,16 +162,6 @@ Use cases: dashboards, CI notifiers ("next event in 5 min"), reminder batching, 
 
 ---
 
-## Notifications
-
-```sh
-macli notify send --title "Done" "build finished"
-```
-
-Wraps `NSUserNotification` for shell scripts. Covers the case where `osascript -e 'display notification'` works but is awkward to parameterize.
-
----
-
 ## Output conventions
 
 - **Snapshot commands**: JSON with `{"ok": bool, ...}` (default). `--tsv` for awk-friendly.
@@ -249,7 +238,7 @@ Read commands (`cal ls`, `event ls`) never touch state. Write commands (`cal add
 
 ### ❓ Linux / Windows?
 
-No. macli wraps Apple-private frameworks (IOKit, HID, EventKit, UserNotifications) that exist only on macOS.
+No. macli wraps Apple-private frameworks (IOKit, HID, EventKit) that exist only on macOS.
 
 ### ❓ Do I need `sudo`?
 
