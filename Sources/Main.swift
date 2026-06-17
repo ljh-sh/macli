@@ -25,6 +25,8 @@ enum MacliRoot: Cmd {
             "monitor": MonitorCmd.self,
             "smc": SmcCmd.self,
             "smc86": Smc86Cmd.self,
+            "battery": BatteryCmd.self,
+            "ssd": SsdCmd.self,
         ]
     )
 }
