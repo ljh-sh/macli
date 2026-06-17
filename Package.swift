@@ -22,6 +22,11 @@ let package = Package(
             dependencies: ["HidSensorObjC"],
             path: "Sources",
             exclude: ["HidSensorObjC"]
+        ),
+        .executableTarget(
+            name: "batteryTests",
+            dependencies: ["HidSensorObjC"],
+            path: "Tests/BatteryTests"
         )
     ],
     cLanguageStandard: .c11

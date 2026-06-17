@@ -71,7 +71,7 @@ private func outputSensorsTsv(_ sensors: [[String: Any]], keyField: Bool = false
     }
 }
 
-private func outputJson(data: [String: Any]) {
+func outputJson(data: [String: Any]) {
     print(x.json.stringify(data))
 }
 

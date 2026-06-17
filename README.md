@@ -114,10 +114,25 @@ macli also exposes battery and SSD info as standalone commands, both JSON/TSV fr
 
 ```sh
 macli battery             # cycle count, capacity, health %, temperature
+macli battery --tsv       # tab-separated for spreadsheets/awk
+macli battery --plist     # full raw AppleSmartBattery IORegistry snapshot
 macli ssd                 # NVMe model, serial, SMART status, TRIM, volumes
 ```
 
 `macli battery` reads from IOKit (`AppleSmartBattery`). `macli ssd` parses `system_profiler SPNVMeDataType`; it does not report wear percentage because macOS does not expose it publicly.
+
+Scripting examples:
+
+```sh
+# Alert when battery health drops below 80%
+macli battery | jq -e '.healthPercent < 80' && echo "consider replacement"
+
+# Log cycle count and temperature to a file
+macli battery --tsv | awk -F'\t' '/^cycleCount|^temperature/{print strftime("%Y-%m-%dT%H:%M:%S"), $1, $2}' >> battery.log
+
+# Monitor system + battery power draw in real time
+macli monitor --metrics battery_power --interval 1
+```
 
 ### Design: agent-oriented
 

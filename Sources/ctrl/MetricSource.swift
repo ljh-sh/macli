@@ -34,6 +34,14 @@ class SmcCurrSource: MetricSource {
     }
 }
 
+class BatteryPowerSource: MetricSource {
+    let prefix = "battery_power"
+    private let battery = BatteryCtrl()
+    func sample() -> [(name: String, value: Double, unit: String)] {
+        return battery.getPowerMetrics()
+    }
+}
+
 // Sensor name sanitizer for column header (PMU tdie1 -> PMU_tdie1)
 func sanitizeMetricName(_ s: String) -> String {
     return s.replacingOccurrences(of: " ", with: "_")

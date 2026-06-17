@@ -24,6 +24,7 @@ enum MonitorCmd: Cmd {
                 "smc_temp": SmcTempSource(),
                 "smc_volt": SmcVoltSource(),
                 "smc_curr": SmcCurrSource(),
+                "battery_power": BatteryPowerSource(),
             ]
 
             // Select sources
@@ -122,6 +123,7 @@ enum MonitorCmd: Cmd {
         [
             TldrItem(desc: "Stream all metrics at 1Hz (Ctrl+C to stop)", cmd: "macli monitor"),
             TldrItem(desc: "Stream specific metrics at 2Hz", cmd: "macli monitor --interval 0.5 --metrics smc_temp,smc_curr"),
+            TldrItem(desc: "Stream battery power draw", cmd: "macli monitor --metrics battery_power"),
             TldrItem(desc: "Take 10 samples then exit", cmd: "macli monitor --count 10"),
             TldrItem(desc: "Downstream processing with awk", cmd: "macli monitor | awk -F'\\t' 'NR>1 {sum+=$2; n++} END {print sum/n}'"),
         ]

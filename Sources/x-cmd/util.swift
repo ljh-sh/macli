@@ -43,6 +43,20 @@ enum XCMD {
             return SimpleYaml.dump(data)
         }
     }
+    
+    enum plist {
+        static func data(_ data: [String: Any]) -> Data? {
+            do {
+                return try PropertyListSerialization.data(
+                    fromPropertyList: data,
+                    format: .xml,
+                    options: 0
+                )
+            } catch {
+                return nil
+            }
+        }
+    }
 }
 
 // MARK: Model to Dict
