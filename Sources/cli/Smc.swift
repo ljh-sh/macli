@@ -181,15 +181,18 @@ enum SmcHidCurr: Cmd {
 enum SmcHidPower: Cmd {
     static let meta = CmdMeta(
         name: "power",
-        desc: "Power sensors (not available via HID)",
+        desc: "Power sensors via IOKit",
         opts: [OptMeta(name: "--tsv", type: Bool.self, desc: "Output TSV instead of JSON")],
         run: { p in
-            let hid = HidSensorCtrl()
-            let sensors = hid.getPower().map { ["name": $0.name, "value": $0.value, "unit": $0.unit] }
+            let data = PowerCtrl().getPower()
             if checkTsv(p) {
-                outputSensorsTsv(sensors)
+                if let sensors = data["sensors"] as? [[String: Any]] {
+                    outputSensorsTsv(sensors)
+                } else {
+                    print("name\tvalue\tunit")
+                }
             } else {
-                outputJson(data: ["ok": true, "source": "HID", "sensors": sensors, "count": sensors.count])
+                outputJson(data: data)
             }
         }
     )
