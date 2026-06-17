@@ -40,6 +40,7 @@ class HidSensorCtrl {
             "voltages": getVoltages().map { ["name": $0.name, "value": $0.value, "unit": $0.unit] },
             "currents": getCurrents().map { ["name": $0.name, "value": $0.value, "unit": $0.unit] },
             "power": [] as [[String: Any]],
+            "note": "Apple Silicon HID sensors only; additional thermal/power sources are out of scope."
         ]
     }
 }

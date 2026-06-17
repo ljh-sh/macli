@@ -90,7 +90,13 @@ enum SmcHidTemp: Cmd {
             if checkTsv(p) {
                 outputSensorsTsv(sensors)
             } else {
-                outputJson(data: ["ok": true, "source": "HID", "sensors": sensors, "count": sensors.count])
+                outputJson(data: [
+                    "ok": true,
+                    "source": "HID",
+                    "sensors": sensors,
+                    "count": sensors.count,
+                    "note": "Apple Silicon HID thermal sensors only; additional IOKit/SMC sources (e.g. GPU, thermal zones) are not enumerated."
+                ])
             }
         }
     )
