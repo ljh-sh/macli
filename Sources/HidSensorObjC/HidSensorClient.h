@@ -9,6 +9,7 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 @interface HidSensorClient : NSObject
++ (NSDictionary<NSString *, NSArray<HidSensorData *> *> *)getAll;
 + (NSArray<HidSensorData *> *)getTemperatures;
 + (NSArray<HidSensorData *> *)getVoltages;
 + (NSArray<HidSensorData *> *)getCurrents;

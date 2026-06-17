@@ -186,10 +186,11 @@ enum SmcHidAll: Cmd {
         opts: [OptMeta(name: "--tsv", type: Bool.self, desc: "Output TSV instead of JSON")],
         run: { p in
             let hid = HidSensorCtrl()
-            let temps = hid.getTemperatures().map { ["name": $0.name, "value": $0.value, "unit": $0.unit] }
-            let volts = hid.getVoltages().map { ["name": $0.name, "value": $0.value, "unit": $0.unit] }
-            let currs = hid.getCurrents().map { ["name": $0.name, "value": $0.value, "unit": $0.unit] }
-            let power = hid.getPower().map { ["name": $0.name, "value": $0.value, "unit": $0.unit] }
+            let all = hid.getAll()
+            let temps = (all["temperatures"] as? [[String: Any]]) ?? []
+            let volts = (all["voltages"] as? [[String: Any]]) ?? []
+            let currs = (all["currents"] as? [[String: Any]]) ?? []
+            let power = (all["power"] as? [[String: Any]]) ?? []
             
             if checkTsv(p) {
                 print("# temperature")
