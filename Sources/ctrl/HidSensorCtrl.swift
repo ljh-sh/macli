@@ -43,7 +43,7 @@ class HidSensorCtrl {
             "source": "HID",
             "temperatures": temps,
             "fans": [] as [[String: Any]],
-            "battery": ["note": "Use IOKit for battery on Apple Silicon"] as [String: Any],
+            "battery": BatteryCtrl().getBattery(),
             "voltages": volts,
             "currents": currs,
             "power": [] as [[String: Any]],

@@ -121,12 +121,22 @@ enum SmcHidFans: Cmd {
 enum SmcHidBatt: Cmd {
     static let meta = CmdMeta(
         name: "batt",
-        desc: "Battery status (limited on Apple Silicon)",
+        desc: "Battery status via IOKit",
         opts: [OptMeta(name: "--tsv", type: Bool.self, desc: "Output TSV instead of JSON")],
         run: { p in
-            let data: [String: Any] = ["ok": true, "source": "HID", "note": "Use 'pmset -g batt' for battery info"]
+            let data = BatteryCtrl().getBattery()
             if checkTsv(p) {
                 print("name\tvalue\tunit")
+                for (key, value) in data.sorted(by: { $0.key < $1.key }) {
+                    if key == "source" || key == "present" || key == "status" { continue }
+                    if let num = value as? NSNumber {
+                        print("\(key)\t\(num)\t")
+                    } else if let str = value as? String {
+                        print("\(key)\t\(str)\t")
+                    } else if let bool = value as? Bool {
+                        print("\(key)\t\(bool)\t")
+                    }
+                }
             } else {
                 outputJson(data: data)
             }
