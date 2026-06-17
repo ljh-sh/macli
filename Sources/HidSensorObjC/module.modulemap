@@ -1,5 +1,6 @@
 module HidSensorObjC {
     header "HidSensorClient.h"
     header "BatteryClient.h"
+    header "PowerClient.h"
     export *
 }

@@ -46,7 +46,7 @@ class HidSensorCtrl {
             "battery": BatteryCtrl().getBattery(),
             "voltages": volts,
             "currents": currs,
-            "power": [] as [[String: Any]],
+            "power": PowerCtrl().getPower(),
             "note": "Apple Silicon HID sensors only; additional thermal/power sources are out of scope."
         ]
     }
