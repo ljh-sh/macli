@@ -108,6 +108,17 @@ Sample output:
 }
 ```
 
+### Battery & SSD health
+
+macli also exposes battery and SSD info as standalone commands, both JSON/TSV friendly:
+
+```sh
+macli battery             # cycle count, capacity, health %, temperature
+macli ssd                 # NVMe model, serial, SMART status, TRIM, volumes
+```
+
+`macli battery` reads from IOKit (`AppleSmartBattery`). `macli ssd` parses `system_profiler SPNVMeDataType`; it does not report wear percentage because macOS does not expose it publicly.
+
 ### Design: agent-oriented
 
 macli follows the x-cmd agent-tool design principle: **minimal context with maximum flexibility**. It stays **dumb** — it does **not** compute thermal indexes, aggregate, render charts, or decide what's "hot". It returns raw sensor values, full stop. Decisions belong to the caller:
