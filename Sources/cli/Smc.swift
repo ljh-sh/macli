@@ -201,7 +201,7 @@ enum SmcHidPower: Cmd {
 enum SmcHidAll: Cmd {
     static let meta = CmdMeta(
         name: "all",
-        desc: "All sensors: temp, volt, curr, power",
+        desc: "All sensors: temp, volt, curr, power, battery",
         opts: [OptMeta(name: "--tsv", type: Bool.self, desc: "Output TSV instead of JSON")],
         run: { p in
             let hid = HidSensorCtrl()
@@ -209,8 +209,9 @@ enum SmcHidAll: Cmd {
             let temps = (all["temperatures"] as? [[String: Any]]) ?? []
             let volts = (all["voltages"] as? [[String: Any]]) ?? []
             let currs = (all["currents"] as? [[String: Any]]) ?? []
-            let power = (all["power"] as? [[String: Any]]) ?? []
-            
+            let powerInfo = (all["power"] as? [String: Any])
+            let powerSensors = (powerInfo?["sensors"] as? [[String: Any]]) ?? []
+
             if checkTsv(p) {
                 print("# temperature")
                 outputSensorsTsv(temps)
@@ -222,18 +223,9 @@ enum SmcHidAll: Cmd {
                 outputSensorsTsv(currs)
                 print("")
                 print("# power")
-                outputSensorsTsv(power)
+                outputSensorsTsv(powerSensors)
             } else {
-                outputJson(data: [
-                    "ok": true,
-                    "source": "HID",
-                    "temperatures": temps,
-                    "fans": [] as [[String: Any]],
-                    "battery": ["note": "Use pmset -g batt"] as [String: Any],
-                    "voltages": volts,
-                    "currents": currs,
-                    "power": power,
-                ])
+                outputJson(data: all)
             }
         }
     )
