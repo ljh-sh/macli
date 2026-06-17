@@ -47,6 +47,7 @@ class HidSensorCtrl {
             "voltages": volts,
             "currents": currs,
             "power": [] as [[String: Any]],
+            "note": "Apple Silicon HID sensors only; additional thermal/power sources are out of scope."
         ]
     }
 }
