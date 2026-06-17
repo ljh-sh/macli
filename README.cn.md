@@ -110,14 +110,29 @@ macli smc all             # → 全部
 
 ### 电池与 SSD 健康
 
-macli 也提供独立的电池和 SSD 信息命令，同样输出 JSON/TSV：
+macli 也提供独立的电池和 SSD 信息命令，支持 JSON/TSV/plist：
 
 ```sh
 macli battery             # 循环次数、容量、健康百分比、温度
+macli battery --tsv       # 制表符分隔，方便 spreadsheet/awk
+macli battery --plist     # 完整原始 AppleSmartBattery IORegistry 快照
 macli ssd                 # NVMe 型号、序列号、SMART 状态、TRIM、卷
 ```
 
 `macli battery` 从 IOKit（`AppleSmartBattery`）读取。`macli ssd` 解析 `system_profiler SPNVMeDataType`；由于 macOS 没有公开磨损百分比，该命令不会报告此项。
+
+脚本示例：
+
+```sh
+# 电池健康低于 80% 时提醒
+macli battery | jq -e '.healthPercent < 80' && echo "建议更换电池"
+
+# 记录循环次数和温度
+macli battery --tsv | awk -F'\t' '/^cycleCount|^temperature/{print strftime("%Y-%m-%dT%H:%M:%S"), $1, $2}' >> battery.log
+
+# 实时监控系统与电池功耗
+macli monitor --metrics battery_power --interval 1
+```
 
 ### 设计：agent-oriented
 
