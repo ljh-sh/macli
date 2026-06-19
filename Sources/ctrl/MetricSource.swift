@@ -42,6 +42,14 @@ class BatteryPowerSource: MetricSource {
     }
 }
 
+class GpuMetricsSource: MetricSource {
+    let prefix = "gpu_metrics"
+    private let gpu = GpuMetricsCtrl()
+    func sample() -> [(name: String, value: Double, unit: String)] {
+        return gpu.getNumericMetrics()
+    }
+}
+
 // Sensor name sanitizer for column header (PMU tdie1 -> PMU_tdie1)
 func sanitizeMetricName(_ s: String) -> String {
     return s.replacingOccurrences(of: " ", with: "_")

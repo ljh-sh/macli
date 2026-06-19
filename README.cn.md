@@ -67,6 +67,8 @@ swift build -c release
 
 ```sh
 macli smc temp                              # CPU/GPU 温度（JSON）
+macli gpu info                              # GPU 名称、核心数、统一内存
+macli display brightness                    # 内置显示器亮度
 macli monitor --count 10 --interval 1       # 流式 10 个样本给 awk
 macli cal ls                                # 列日历（JSON）
 ```
@@ -78,8 +80,9 @@ macli cal ls                                # 列日历（JSON）
 ## 路线图
 
 - [x] SMC 传感器快照、流式监控、EventKit
-- [ ] 电池健康（`macli battery`）
-- [ ] SSD 健康（`macli ssd`）
+- [x] 电池健康（`macli battery`）
+- [x] SSD 健康（`macli ssd`）
+- [x] 显示器亮度与 GPU 信息（`macli display`、`macli gpu`）
 
 详情见 [ROADMAP.md](ROADMAP.md)。
 
@@ -152,6 +155,26 @@ macli battery --tsv | awk -F'\t' '/^cycleCount|^temperature/{print strftime("%Y-
 macli monitor --metrics battery_power --interval 1
 ```
 
+### 显示器与 GPU
+
+`macli display` 通过私有 `DisplayServices` framework 读取并设置显示器亮度。
+`macli gpu` 通过 `Metal` 报告当前 GPU，并从 `IOKit` 的 `AGXAccelerator`
+读取核心数与性能计数器。
+
+```sh
+macli display list                      # 所有在线显示器及亮度
+macli display brightness                # 当前亮度（0.0–1.0）
+macli display brightness --set 0.5      # 设置内置显示器亮度
+macli gpu info                          # 名称、统一内存、核心数
+macli gpu info --tsv                    # 制表符分隔输出
+```
+
+`monitor` 也可以流式输出 GPU 利用率（实验性，仅 Apple Silicon）：
+
+```sh
+macli monitor --metrics gpu_metrics --interval 1
+```
+
 ### 设计：agent-oriented
 
 macli 遵循 x-cmd 面向 agent 的 CLI 工具设计原则：**最小上下文，最大灵活性**。它故意保持**笨** —— 不算热指数、不聚合、不画图、不判断什么是"过热"。只返回原始传感器值，到此为止。判断交给调用方：
@@ -177,12 +200,13 @@ macli smc temp --tsv | sort -t$'\t' -k2 -n | tail -5    # 最热的 5 个传感�
 macli monitor --interval 1 --metrics smc_temp,smc_curr
 macli monitor --count 10 --interval 0.5 --metrics smc_temp \
   | awk -F'\t' 'NR>1 {sum+=$2; n++} END {print "avg:", sum/n}'
+macli monitor --metrics gpu_metrics --interval 1   # GPU 利用率（实验性）
 ```
 
 参数：
 
 - `--interval N` —— 采样间隔秒（支持小数，默认 1.0）
-- `--metrics list` —— 逗号分隔的指标源（默认：全部）
+- `--metrics list` —— 逗号分隔的指标源（默认：全部）。源：`smc_temp`、`smc_volt`、`smc_curr`、`battery_power`、`gpu_metrics`
 - `--count N` —— 采样 N 次后退出（默认：无限，Ctrl-C 停止）
 
 第一行 header 锁定列顺序；后续行按位置对应。`awk -F'\t'` 是预期的下游。

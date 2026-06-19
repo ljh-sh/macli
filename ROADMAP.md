@@ -24,19 +24,22 @@ Guiding principle: **macli only does what shell / Python cannot do easily** — 
 
 ## v0.4.0 — Display & GPU primitives
 
-Goal: expose stable display/GPU metadata and experimental frequency sampling.
+Goal: expose stable display/GPU metadata and experimental utilization sampling.
 
-- [ ] `macli display brightness` read current brightness
-- [ ] Optional brightness set via `CoreDisplay_Display_SetUserBrightness` behind `--set`
-- [ ] `macli gpu info` — core count, device name, unified memory size
-- [ ] `macli monitor --experimental` GPU/CPU frequency sampling
-  - requires root for `powermetrics` / IOKit path
-  - clearly marked experimental because IOKit key names and units change between Apple Silicon generations
+- [x] `macli display brightness` read current brightness
+- [x] Optional brightness set via `DisplayServicesSetBrightness` behind `--set`
+- [x] `macli gpu info` — core count, device name, unified memory size
+- [x] `macli monitor --metrics gpu_metrics` experimental GPU utilization sampling
+  - reads `AGXAccelerator` `PerformanceStatistics` without root
+  - clearly marked experimental because counter key names vary across Apple Silicon generations
+- [ ] CPU/GPU frequency sampling via `powermetrics` / IOKit
+  - requires root
+  - deferred until a stable IOKit key mapping is identified
 - [ ] Close or split the AXUIElement (window / app automation) feasibility discussion
 
 Success criteria:
 - Read paths work without root.
-- Write / frequency paths print a clear root-required message instead of crashing.
+- Write paths require an adjustable display and print a clear error otherwise.
 
 ---
 

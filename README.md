@@ -67,6 +67,8 @@ swift build -c release
 
 ```sh
 macli smc temp                              # CPU/GPU temps as JSON
+macli gpu info                              # GPU name, cores, unified memory
+macli display brightness                    # built-in display brightness
 macli monitor --count 10 --interval 1       # stream 10 samples to awk
 macli cal ls                                # list calendars as JSON
 ```
@@ -78,8 +80,9 @@ Output schema: `{"ok": true, ...}` on success, `{"ok": false, "error": "...", "h
 ## Roadmap
 
 - [x] SMC sensor snapshot, streaming monitor, EventKit
-- [ ] Battery health (`macli battery`)
-- [ ] SSD health (`macli ssd`)
+- [x] Battery health (`macli battery`)
+- [x] SSD health (`macli ssd`)
+- [x] Display brightness & GPU info (`macli display`, `macli gpu`)
 
 See [ROADMAP.md](ROADMAP.md) for details.
 
@@ -152,6 +155,26 @@ macli battery --tsv | awk -F'\t' '/^cycleCount|^temperature/{print strftime("%Y-
 macli monitor --metrics battery_power --interval 1
 ```
 
+### Display & GPU
+
+`macli display` reads and sets display brightness through the private
+`DisplayServices` framework. `macli gpu` reports the active GPU via `Metal` and
+reads core count / performance counters from `AGXAccelerator` in `IOKit`.
+
+```sh
+macli display list                      # all online displays + brightness
+macli display brightness                # current brightness (0.0–1.0)
+macli display brightness --set 0.5      # set built-in display brightness
+macli gpu info                          # name, unified memory, core count
+macli gpu info --tsv                    # tab-separated output
+```
+
+`monitor` can also stream GPU utilization (experimental, Apple Silicon only):
+
+```sh
+macli monitor --metrics gpu_metrics --interval 1
+```
+
 ### Design: agent-oriented
 
 macli follows the x-cmd agent-tool design principle: **minimal context with maximum flexibility**. It stays **dumb** — it does **not** compute thermal indexes, aggregate, render charts, or decide what's "hot". It returns raw sensor values, full stop. Decisions belong to the caller:
@@ -177,12 +200,13 @@ This keeps `macli --help` short (saves tokens when an LLM loads it as context). 
 macli monitor --interval 1 --metrics smc_temp,smc_curr
 macli monitor --count 10 --interval 0.5 --metrics smc_temp \
   | awk -F'\t' 'NR>1 {sum+=$2; n++} END {print "avg:", sum/n}'
+macli monitor --metrics gpu_metrics --interval 1   # GPU utilization (experimental)
 ```
 
 Flags:
 
 - `--interval N` — seconds between samples (supports decimals, default 1.0)
-- `--metrics list` — comma-separated sources (default: all)
+- `--metrics list` — comma-separated sources (default: all). Sources: `smc_temp`, `smc_volt`, `smc_curr`, `battery_power`, `gpu_metrics`
 - `--count N` — exit after N samples (default: infinite, Ctrl-C to stop)
 
 The header row locks column order; subsequent rows match positionally. `awk -F'\t'` is the intended downstream.

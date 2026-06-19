@@ -21,7 +21,11 @@ let package = Package(
             name: "macli",
             dependencies: ["HidSensorObjC"],
             path: "Sources",
-            exclude: ["HidSensorObjC"]
+            exclude: ["HidSensorObjC"],
+            linkerSettings: [
+                .linkedFramework("Metal"),
+                .linkedFramework("IOKit")
+            ]
         ),
         .executableTarget(
             name: "batteryTests",
