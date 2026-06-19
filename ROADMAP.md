@@ -23,19 +23,13 @@ Guiding principle: **macli only does what shell / Python cannot do easily** — 
 
 ## v0.3.0 — SSD health
 
-Goal: read NVMe SMART data without requiring `smartmontools`.
-
 - [x] `macli ssd` basic snapshot (model, serial, capacity, SMART status, TRIM, volumes)
-- [ ] `macli ssd` advanced SMART data
-  - TBW (total bytes written), wear leveling count, available spare
-  - media errors, temperature, power cycles
-- [ ] Per-disk selection: `macli ssd --disk disk0`
-- [ ] Threshold exit codes: `--warn-spare`, `--warn-wear`
-- [ ] Document Apple Silicon SSD compatibility matrix
+- [ ] Document Apple Silicon SSD compatibility matrix and note that detailed wear data belongs to `smartctl`
 
-Success criteria:
-- Works on Apple Silicon internal SSD and external Thunderbolt NVMe.
-- Falls back gracefully when SMART is unavailable.
+Note: full NVMe SMART parsing (TBW, wear leveling, available spare, media errors,
+power cycles) is intentionally left to `smartctl`. It is not a fragile Apple-only
+API — Python can already wrap `smartctl` reliably — so duplicating it in macli
+would violate the "only what shell/Python cannot do" principle.
 
 ---
 
