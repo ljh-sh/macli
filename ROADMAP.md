@@ -19,6 +19,15 @@ Guiding principle: **macli only does what shell / Python cannot do easily** — 
 - [x] Battery power metrics in `macli monitor`
 - [x] Basic NVMe drive info (`macli ssd`) via `system_profiler`
 - [x] SSD scope documented; detailed SMART left to `smartctl`
+- [x] Display brightness read/write (`macli display`)
+- [x] GPU metadata (`macli gpu info`)
+- [x] Experimental GPU utilization in `macli monitor --metrics gpu_metrics`
+
+---
+
+## v0.5.0 — Next
+
+TBD.
 
 ---
 
