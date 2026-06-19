@@ -18,18 +18,7 @@ Guiding principle: **macli only does what shell / Python cannot do easily** — 
 - [x] Battery & power snapshot (`macli battery`) with JSON/TSV/plist output
 - [x] Battery power metrics in `macli monitor`
 - [x] Basic NVMe drive info (`macli ssd`) via `system_profiler`
-
----
-
-## v0.3.0 — SSD health
-
-- [x] `macli ssd` basic snapshot (model, serial, capacity, SMART status, TRIM, volumes)
-- [ ] Document Apple Silicon SSD compatibility matrix and note that detailed wear data belongs to `smartctl`
-
-Note: full NVMe SMART parsing (TBW, wear leveling, available spare, media errors,
-power cycles) is intentionally left to `smartctl`. It is not a fragile Apple-only
-API — Python can already wrap `smartctl` reliably — so duplicating it in macli
-would violate the "only what shell/Python cannot do" principle.
+- [x] SSD scope documented; detailed SMART left to `smartctl`
 
 ---
 
