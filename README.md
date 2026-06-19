@@ -119,7 +119,25 @@ macli battery --plist     # full raw AppleSmartBattery IORegistry snapshot
 macli ssd                 # NVMe model, serial, SMART status, TRIM, volumes
 ```
 
-`macli battery` reads from IOKit (`AppleSmartBattery`). `macli ssd` parses `system_profiler SPNVMeDataType`; it does not report wear percentage because macOS does not expose it publicly.
+`macli battery` reads from IOKit (`AppleSmartBattery`).
+
+`macli ssd` parses `system_profiler SPNVMeDataType`. It returns model, serial,
+capacity, SMART status, TRIM support and volumes. It does **not** parse detailed
+SMART log pages because Apple does not expose them through a public API. For
+wear-level data (TBW, percentage used, media errors, etc.) use `smartctl`:
+
+```sh
+brew install smartmontools
+smartctl -a disk0
+```
+
+SSD compatibility:
+
+| Platform | Basic info (`macli ssd`) | Detailed SMART |
+|---|---|---|
+| Apple Silicon internal SSD | ✅ | Use `smartctl` |
+| External Thunderbolt NVMe | ✅ | Use `smartctl` |
+| USB/SATA adapters | May appear as storage, not NVMe | Use `smartctl` |
 
 Scripting examples:
 

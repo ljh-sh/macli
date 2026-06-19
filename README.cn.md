@@ -119,7 +119,25 @@ macli battery --plist     # 完整原始 AppleSmartBattery IORegistry 快照
 macli ssd                 # NVMe 型号、序列号、SMART 状态、TRIM、卷
 ```
 
-`macli battery` 从 IOKit（`AppleSmartBattery`）读取。`macli ssd` 解析 `system_profiler SPNVMeDataType`；由于 macOS 没有公开磨损百分比，该命令不会报告此项。
+`macli battery` 从 IOKit（`AppleSmartBattery`）读取。
+
+`macli ssd` 解析 `system_profiler SPNVMeDataType`，返回型号、序列号、容量、
+SMART 状态、TRIM 支持和卷信息。它**不**解析详细 SMART 日志页，因为 Apple
+没有通过公开 API 暴露这些数据。磨损数据（TBW、已用百分比、media errors 等）
+请使用 `smartctl`：
+
+```sh
+brew install smartmontools
+smartctl -a disk0
+```
+
+SSD 兼容性：
+
+| 平台 | 基础信息（`macli ssd`） | 详细 SMART |
+|---|---|---|
+| Apple Silicon 内置 SSD | ✅ | 使用 `smartctl` |
+| 外接 Thunderbolt NVMe | ✅ | 使用 `smartctl` |
+| USB/SATA 转接盒 | 可能识别为普通存储而非 NVMe | 使用 `smartctl` |
 
 脚本示例：
 
