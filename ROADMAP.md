@@ -15,25 +15,9 @@ Guiding principle: **macli only does what shell / Python cannot do easily** — 
 - [x] User notifications (`macli notify`) and text-to-speech (`macli speak`)
 - [x] Multi-formula Homebrew tap [`ljh-sh/cli`](https://github.com/ljh-sh/homebrew-cli)
 - [x] Signed releases (cosign keyless `.sigstore.json` bundles)
-
----
-
-## v0.2.0 — Battery & power
-
-Goal: expose the full `AppleSmartBattery` IORegistry snapshot in a script-friendly form.
-
-- [ ] `macli battery` snapshot
-  - cycle count, design capacity, current maximum capacity
-  - health percentage, cell voltages, design / current Wh
-  - AC charging state, input power (watts), manufacture date
-- [ ] Output modes: `--json`, `--tsv`, and `--plist`
-- [ ] Add battery power draw / charge rate to `macli monitor` stream
-- [ ] CI tests using mocked IORegistry data so GitHub runners can validate parsing
-- [ ] README examples for battery-health scripting
-
-Success criteria:
-- `macli battery` runs in < 50 ms on a MacBook.
-- Output schema is stable and documented in `--help`.
+- [x] Battery & power snapshot (`macli battery`) with JSON/TSV/plist output
+- [x] Battery power metrics in `macli monitor`
+- [x] Basic NVMe drive info (`macli ssd`) via `system_profiler`
 
 ---
 
@@ -41,7 +25,8 @@ Success criteria:
 
 Goal: read NVMe SMART data without requiring `smartmontools`.
 
-- [ ] `macli ssd` snapshot
+- [x] `macli ssd` basic snapshot (model, serial, capacity, SMART status, TRIM, volumes)
+- [ ] `macli ssd` advanced SMART data
   - TBW (total bytes written), wear leveling count, available spare
   - media errors, temperature, power cycles
 - [ ] Per-disk selection: `macli ssd --disk disk0`
@@ -77,11 +62,12 @@ Success criteria:
 These run in parallel with feature milestones.
 
 - [ ] Release workflow auto-updates `Formula/macli.rb` in [`ljh-sh/homebrew-cli`](https://github.com/ljh-sh/homebrew-cli) on every new tag
+- [x] Unit tests for battery IORegistry parsing (`batteryTests` with mocked data)
 - [ ] Unit tests for `smc` key parsing, EventKit output formatting, and CLI argument parsing
 - [ ] OpenSSF Scorecard >= 8.5
   - keep `Signed-Releases`, `CI-Tests`, `Code-Review`, and dependency-update checks green
   - add fuzzing or property-based tests only if a clear fragile parser justifies the cost
-- [ ] Reproducible build verification in CI for every release
+- [x] Reproducible build verification in CI for every release
 - [ ] Add `roff` to `ljh-sh/cli` once `roff` cuts its first tagged release
 
 ---
