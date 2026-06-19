@@ -46,11 +46,11 @@ The `universal` tarball is a fat Mach-O (arm64 + x86_64) — works on Apple Sili
 
 ### eget
 
-Via [x-cmd eget](https://x-cmd.com/install/macli):
+Via [x-cmd eget](https://x-cmd.com/mod/eget):
 
 ```sh
-x eget ljh-sh/macli        # download and install
-x eget use ljh-sh/macli    # install to ~/.local/bin
+x eget use ljh-sh/macli              # install latest to ~/.local/bin
+x eget use --tag v0.4.0 ljh-sh/macli # install a specific release
 ```
 
 ### Build from source

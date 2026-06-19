@@ -46,11 +46,11 @@ sudo mv bin/macli /usr/local/bin/
 
 ### eget
 
-通过 [x-cmd eget](https://x-cmd.com/install/macli)：
+通过 [x-cmd eget](https://x-cmd.com/mod/eget)：
 
 ```sh
-x eget ljh-sh/macli        # 下载并安装
-x eget use ljh-sh/macli    # 装到 ~/.local/bin
+x eget use ljh-sh/macli              # 安装最新版到 ~/.local/bin
+x eget use --tag v0.4.0 ljh-sh/macli # 安装指定版本
 ```
 
 ### 源码编译
