@@ -26,6 +26,13 @@ else
     fail "unknown flag error does not name the flag"
 fi
 
+# Sensor-dependent assertions are skipped in CI where MACLI_SKIP_SENSOR_DATA=1,
+# because the HID sensor bridge returns no data and monitor yields empty columns.
+if [ "${MACLI_SKIP_SENSOR_DATA:-}" = "1" ]; then
+    info "skipping sensor-dependent monitor filter tests in CI (MACLI_SKIP_SENSOR_DATA=1)"
+    exit 0
+fi
+
 RESULT=$($BIN monitor --count 1 --metric smc_temp 2>&1)
 HEADER=$(echo "$RESULT" | head -1)
 if echo "$HEADER" | grep -q $'\tsmc_temp_'; then
