@@ -12,6 +12,12 @@
 
 Use it when you (or your AI agent) need to ask macOS something that `system_profiler` / `ioreg` / `osascript` either can't answer or answer badly: *CPU die temperature right now*, *stream 1 Hz sensor readings into awk*, *today's calendar as JSON*.
 
+## Governance
+
+macli is maintained by the core team listed in [CODEOWNERS](./CODEOWNERS).
+All changes to `main` require a pull request and approval from a code owner.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
+
 Mirrors: [github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg.org/ljh-sh/macli](https://codeberg.org/ljh-sh/macli)
 
 Docs: [ljh-sh.github.io/macli](https://ljh-sh.github.io/macli)
