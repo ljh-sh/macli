@@ -377,6 +377,12 @@ See [`changelog/`](changelog/) for versioned release notes, starting with [`v0.0
 
 ---
 
+## Support
+
+- Read the [docs](https://ljh-sh.github.io/macli).
+- Open a [discussion](https://github.com/ljh-sh/macli/discussions) for questions.
+- Open an [issue](https://github.com/ljh-sh/macli/issues) for bugs or feature requests.
+
 ## Code of Conduct
 
 This project follows the [Contributor Covenant Code of Conduct](./CODE_OF_CONDUCT.md).
