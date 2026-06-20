@@ -405,3 +405,11 @@ cosign verify-blob \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   macli-darwin-universal.tar.xz
 ```
+
+The npm package `@ljh-sh/macli` is published from GitHub Actions. You can verify
+its provenance with:
+
+```sh
+npm install -g @ljh-sh/macli
+npm audit signatures
+```
