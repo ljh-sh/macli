@@ -38,14 +38,17 @@ enum Smc86Cmd: Cmd {
             "curr": Smc86Curr.self,
             "power": Smc86Power.self,
             "all": Smc86All.self,
+            "keys": Smc86Keys.self,
+            "info": Smc86Info.self,
         ]
     )
-    
+
     static func getTLDR() -> [TldrItem]? {
         [
             TldrItem(desc: "Show all sensors (JSON)", cmd: "macli smc86 all"),
             TldrItem(desc: "Show fan speeds", cmd: "macli smc86 fans"),
             TldrItem(desc: "Show battery status", cmd: "macli smc86 batt"),
+            TldrItem(desc: "Enumerate all available SMC keys", cmd: "macli smc86 keys"),
         ]
     }
 }
@@ -234,20 +237,44 @@ enum SmcHidAll: Cmd {
 enum Smc86Temp: Cmd {
     static let meta = CmdMeta(
         name: "temp",
-        desc: "Temperature sensors (CPU, GPU, battery)",
+        desc: "Temperature sensors (CPU, GPU, battery, PMU tdev/tdie/tcal via HID bridge)",
         opts: [OptMeta(name: "--tsv", type: Bool.self, desc: "Output TSV instead of JSON")],
         run: { p in
+            var sensors: [[String: Any]] = []
+            var sources: [String] = []
+            var smcOpened = false
+
+            // Direct AppleSMC path
             let smc = SmcCtrl()
-            guard smc.open() else {
-                let data: [String: Any] = ["ok": false, "error": "Cannot open Intel SMC (not an Intel Mac?)"]
-                checkTsv(p) ? print("error\tcannot open Intel SMC") : outputJson(data: data)
-                return
+            if smc.open() {
+                smcOpened = true
+                let direct = smc.getTemperatures().map { ["key": $0.key, "name": $0.name, "value": $0.value, "unit": $0.unit] }
+                sensors.append(contentsOf: direct)
+                if !direct.isEmpty { sources.append("Intel SMC") }
             }
-            let sensors = smc.getTemperatures().map { ["key": $0.key, "name": $0.name, "value": $0.value, "unit": $0.unit] }
+
+            // HID bridge fallback (modern Intel T2-era PMU tdev/tdie/tcal sensors)
+            let hid = HidSensorCtrl()
+            let hidSensors = hid.getTemperatures().map { sensor -> [String: Any] in
+                ["key": "HID:\(sensor.name)", "name": sensor.name, "value": sensor.value, "unit": sensor.unit]
+            }
+            // Dedup by name (HID sensors can overlap with SMC direct)
+            let existingNames = Set(sensors.compactMap { $0["name"] as? String })
+            let newHid = hidSensors.filter { !existingNames.contains($0["name"] as? String ?? "") }
+            sensors.append(contentsOf: newHid)
+            if !newHid.isEmpty { sources.append("HID") }
+
             if checkTsv(p) {
                 outputSensorsTsv(sensors, keyField: true)
             } else {
-                outputJson(data: ["ok": true, "source": "Intel SMC", "sensors": sensors, "count": sensors.count])
+                if sensors.isEmpty {
+                    let hint = smcOpened
+                        ? "Intel SMC opened but no recognized temperature keys; HID bridge returned no sensors. Host may be a pre-T2 Intel Mac, or no thermal sensors are exposed. Try `macli smc86 keys --read` to see all detected keys."
+                        : "Cannot open Intel SMC (not an Intel Mac?)"
+                    outputJson(data: ["ok": false, "error": hint, "sources": sources, "smcAvailable": smcOpened])
+                } else {
+                    outputJson(data: ["ok": true, "sources": sources, "sensors": sensors, "count": sensors.count])
+                }
             }
         }
     )
@@ -384,7 +411,7 @@ enum Smc86All: Cmd {
             let volts = (r["voltages"] as? [[String: Any]]) ?? []
             let currs = (r["currents"] as? [[String: Any]]) ?? []
             let power = (r["power"] as? [[String: Any]]) ?? []
-            
+
             if checkTsv(p) {
                 print("# temperature")
                 outputSensorsTsv(temps, keyField: true)
@@ -415,6 +442,138 @@ enum Smc86All: Cmd {
                 }
                 outputJson(data: data)
             }
+        }
+    )
+}
+
+enum Smc86Keys: Cmd {
+    static let meta = CmdMeta(
+        name: "keys",
+        desc: "Enumerate all available Intel SMC keys (4-char ASCII). Use --read to also fetch values.",
+        opts: [OptMeta(name: "--read", type: Bool.self, desc: "Also attempt to read each key's value")],
+        run: { p in
+            let smc = SmcCtrl()
+            guard smc.open() else {
+                let data: [String: Any] = ["ok": false, "error": "Cannot open Intel SMC (not an Intel Mac?)"]
+                outputJson(data: data)
+                return
+            }
+
+            let doRead = p.opt("--read") as Bool? ?? false
+            // Use category-grouped key lists for quick discovery (not full brute-force enumeration)
+            // to avoid slow full 26-letter sweeps.
+            var discovered: [String: [String: Any]] = [:]
+
+            // Probe each curated key; report only existing
+            for (key, name) in SmcCtrl.temperatureKeys {
+                if smc.keyExists(key) {
+                    var entry: [String: Any] = ["name": name, "category": "temperature"]
+                    if doRead, let v = smc.readKey(key) {
+                        entry["value"] = v
+                    }
+                    discovered[key] = entry
+                }
+            }
+            for (key, name) in SmcCtrl.voltageKeys {
+                if smc.keyExists(key) {
+                    var entry: [String: Any] = ["name": name, "category": "voltage"]
+                    if doRead, let v = smc.readKey(key) {
+                        entry["value"] = v
+                    }
+                    discovered[key] = entry
+                }
+            }
+            for (key, name) in SmcCtrl.currentKeys {
+                if smc.keyExists(key) {
+                    var entry: [String: Any] = ["name": name, "category": "current"]
+                    if doRead, let v = smc.readKey(key) {
+                        entry["value"] = v
+                    }
+                    discovered[key] = entry
+                }
+            }
+            for (key, name) in SmcCtrl.powerKeys {
+                if smc.keyExists(key) {
+                    var entry: [String: Any] = ["name": name, "category": "power"]
+                    if doRead, let v = smc.readKey(key) {
+                        entry["value"] = v
+                    }
+                    discovered[key] = entry
+                }
+            }
+            // Probe common fan / battery keys
+            for key in ["FNum", "F0Ac", "F1Ac", "F2Ac", "BNum", "BATP", "MSDI"] {
+                if smc.keyExists(key) {
+                    var entry: [String: Any] = ["name": key, "category": "system"]
+                    if doRead, let v = smc.readKey(key) {
+                        entry["value"] = v
+                    }
+                    discovered[key] = entry
+                }
+            }
+
+            // Print
+            if doRead {
+                print("key\tname\tcategory\tvalue")
+                for (key, entry) in discovered.sorted(by: { $0.key < $1.key }) {
+                    let name = entry["name"] as? String ?? ""
+                    let cat = entry["category"] as? String ?? ""
+                    if let v = entry["value"] {
+                        print("\(key)\t\(name)\t\(cat)\t\(v)")
+                    } else {
+                        print("\(key)\t\(name)\t\(cat)\t")
+                    }
+                }
+            } else {
+                let keysList = discovered.keys.sorted()
+                for key in keysList {
+                    let entry = discovered[key]!
+                    let name = entry["name"] as? String ?? ""
+                    let cat = entry["category"] as? String ?? ""
+                    print("\(key)\t\(name)\t\(cat)")
+                }
+                if keysList.isEmpty {
+                    print("(no recognized SMC keys found on this host)")
+                }
+            }
+        }
+    )
+}
+
+enum Smc86Info: Cmd {
+    static let meta = CmdMeta(
+        name: "info",
+        desc: "Intel SMC summary: connection status, key counts by category, host hints.",
+        run: { _ in
+            let smc = SmcCtrl()
+            let opened = smc.open()
+
+            var data: [String: Any] = [
+                "ok": opened,
+                "host": "Intel Mac",
+                "smcAvailable": opened,
+            ]
+
+            if opened {
+                var counts: [String: Int] = [
+                    "temperature": smc.getTemperatures().count,
+                    "fans": smc.getFans().count,
+                    "voltage": smc.getVoltages().count,
+                    "current": smc.getCurrents().count,
+                    "power": smc.getPower().count,
+                ]
+                let bat = smc.getBattery()
+                if let n = bat["batteryCount"] as? Int, n > 0 {
+                    counts["battery"] = n
+                }
+                data["keyCounts"] = counts
+                data["totalSensors"] = (counts.values.reduce(0, +))
+                data["note"] = "On modern T2-era Intel Macs, also check `macli monitor --metrics smc_temp` for additional PMU tdev/tdie sensors exposed via HID bridge."
+            } else {
+                data["error"] = "Cannot open Intel SMC (not an Intel Mac?)"
+            }
+
+            outputJson(data: data)
         }
     )
 }
