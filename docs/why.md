@@ -44,7 +44,7 @@ macli does not try to replace your shell. It gives the shell clean data so you c
 ```sh
 macli smc temp --tsv | sort -t$'\t' -k2 -n | tail -5
 macli battery | jq -e '.healthPercent < 80'
-macli monitor --metrics battery_power --interval 1 | awk -F'\t' 'NR>1 {sum+=$2; n++} END {print sum/n}'
+macli monitor --metric battery_power --interval 1 | awk -F'\t' 'NR>1 {sum+=$2; n++} END {print sum/n}'
 ```
 
 ## What is the SMC?

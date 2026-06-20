@@ -21,7 +21,7 @@ Guiding principle: **macli only does what shell / Python cannot do easily** — 
 - [x] SSD scope documented; detailed SMART left to `smartctl`
 - [x] Display brightness read/write (`macli display`)
 - [x] GPU metadata (`macli gpu info`)
-- [x] Experimental GPU utilization in `macli monitor --metrics gpu_metrics`
+- [x] Experimental GPU utilization in `macli monitor --metric gpu_metrics`
 
 ---
 
@@ -38,7 +38,7 @@ Goal: expose stable display/GPU metadata and experimental utilization sampling.
 - [x] `macli display brightness` read current brightness
 - [x] Optional brightness set via `DisplayServicesSetBrightness` behind `--set`
 - [x] `macli gpu info` — core count, device name, unified memory size
-- [x] `macli monitor --metrics gpu_metrics` experimental GPU utilization sampling
+- [x] `macli monitor --metric gpu_metrics` experimental GPU utilization sampling
   - reads `AGXAccelerator` `PerformanceStatistics` without root
   - clearly marked experimental because counter key names vary across Apple Silicon generations
 - [ ] CPU/GPU frequency sampling via `powermetrics` / IOKit

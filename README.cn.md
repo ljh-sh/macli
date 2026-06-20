@@ -90,12 +90,7 @@ macli cal ls                                # 列日历（JSON）
 
 ## 路线图
 
-- [x] SMC 传感器快照、流式监控、EventKit
-- [x] 电池健康（`macli battery`）
-- [x] SSD 健康（`macli ssd`）
-- [x] 显示器亮度与 GPU 信息（`macli display`、`macli gpu`）
-
-详情见 [ROADMAP.md](ROADMAP.md)。
+详见 [ROADMAP.md](ROADMAP.md) 了解当前路线图与已完成里程碑。
 
 ---
 
@@ -163,7 +158,7 @@ macli battery | jq -e '.healthPercent < 80' && echo "建议更换电池"
 macli battery --tsv | awk -F'\t' '/^cycleCount|^temperature/{print strftime("%Y-%m-%dT%H:%M:%S"), $1, $2}' >> battery.log
 
 # 实时监控系统与电池功耗
-macli monitor --metrics battery_power --interval 1
+macli monitor --metric battery_power --interval 1
 ```
 
 ### 显示器与 GPU
@@ -183,7 +178,7 @@ macli gpu info --tsv                    # 制表符分隔输出
 `monitor` 也可以流式输出 GPU 利用率（实验性，仅 Apple Silicon）：
 
 ```sh
-macli monitor --metrics gpu_metrics --interval 1
+macli monitor --metric gpu_metrics --interval 1
 ```
 
 ### 设计：agent-oriented
@@ -208,16 +203,16 @@ macli smc temp --tsv | sort -t$'\t' -k2 -n | tail -5    # 最热的 5 个传感�
 `monitor` 按间隔采样传感器源，流式输出 TSV —— 每行一个样本。单进程，不会每次 poll 都 fork 子进程，不会每次 tick 启 Python 解释器。设计为 `awk` 的长跑管道前级。
 
 ```sh
-macli monitor --interval 1 --metrics smc_temp,smc_curr
-macli monitor --count 10 --interval 0.5 --metrics smc_temp \
+macli monitor --interval 1 --metric smc_temp,smc_curr
+macli monitor --count 10 --interval 0.5 --metric smc_temp \
   | awk -F'\t' 'NR>1 {sum+=$2; n++} END {print "avg:", sum/n}'
-macli monitor --metrics gpu_metrics --interval 1   # GPU 利用率（实验性）
+macli monitor --metric gpu_metrics --interval 1   # GPU 利用率（实验性）
 ```
 
 参数：
 
 - `--interval N` —— 采样间隔秒（支持小数，默认 1.0）
-- `--metrics list` —— 逗号分隔的指标源（默认：全部）。源：`smc_temp`、`smc_volt`、`smc_curr`、`battery_power`、`gpu_metrics`
+- `--metric list` —— 逗号分隔的指标源或列名前缀过滤器（默认：全部）。源：`smc_temp`、`smc_volt`、`smc_curr`、`battery_power`、`gpu_metrics`。前缀如 `smc_temp_cpu` 可只选择匹配的列。
 - `--count N` —— 采样 N 次后退出（默认：无限，Ctrl-C 停止）
 
 第一行 header 锁定列顺序；后续行按位置对应。`awk -F'\t'` 是预期的下游。
