@@ -2,6 +2,7 @@
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/ljh-sh/macli/badge)](https://scorecard.dev/)
 [![CI](https://github.com/ljh-sh/macli/actions/workflows/ci.yml/badge.svg)](https://github.com/ljh-sh/macli/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/Docs-website-blue.svg)](https://ljh-sh.github.io/macli)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.txt)
 
 > Minimal context with maximum flexibility — macOS system tools for AI agents. Native Apple frameworks. AI-friendly JSON/TSV output.
@@ -11,6 +12,8 @@
 Use it when you (or your AI agent) need to ask macOS something that `system_profiler` / `ioreg` / `osascript` either can't answer or answer badly: *CPU die temperature right now*, *stream 1 Hz sensor readings into awk*, *today's calendar as JSON*.
 
 Mirrors: [github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg.org/ljh-sh/macli](https://codeberg.org/ljh-sh/macli)
+
+Docs: [ljh-sh.github.io/macli](https://ljh-sh.github.io/macli)
 
 ## For AI agents
 
@@ -237,6 +240,11 @@ Use cases: dashboards, CI notifiers ("next event in 5 min"), reminder batching, 
 - **Errors**: `{"ok": false, "error": "...", "hint": "..."}` — never silent.
 
 ---
+
+## FAQ
+
+The full FAQ lives on the docs site: [ljh-sh.github.io/macli/faq](https://ljh-sh.github.io/macli/faq).  
+Source: [`docs/faq.md`](docs/faq.md).
 
 ## FAQ about Installation & permissions
 
