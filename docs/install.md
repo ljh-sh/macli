@@ -78,3 +78,15 @@ macli cal ls
 ```
 
 If you miss the prompt, go to **System Settings → Privacy & Security → Calendars** (or **Reminders**) and enable the terminal you're running macli from.
+
+## Verify the binary
+
+After downloading a release tarball, verify its cosign signature:
+
+```sh
+cosign verify-blob \
+  --bundle macli-darwin-universal.tar.xz.sigstore.json \
+  --certificate-identity-regexp '^https://github.com/ljh-sh/macli/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  macli-darwin-universal.tar.xz
+```
