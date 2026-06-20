@@ -2,18 +2,25 @@ import Foundation
 
 private var gMonitorCancelled: Int32 = 0
 
+private struct ColumnRef: Hashable {
+    let sourceKey: String
+    let name: String
+    let unit: String
+    let fullName: String
+}
+
 enum MonitorCmd: Cmd {
     static let meta = CmdMeta(
         name: "monitor",
         desc: "Streaming TSV monitor. Single process, all metric sources. Downstream awk-friendly.",
         opts: [
             OptMeta(name: "--interval", type: Double.self, desc: "Seconds between samples (default 1.0, supports decimal)"),
-            OptMeta(name: "--metrics", type: String.self, desc: "Comma-separated metric sources (default: all)"),
+            OptMeta(name: "--metric", alias: "--metrics", type: String.self, desc: "Comma-separated source or column-prefix filters (default: all). Sources: smc_temp, smc_volt, smc_curr, battery_power, gpu_metrics"),
             OptMeta(name: "--count", type: Int.self, desc: "Number of samples before exit (default: infinite)"),
         ],
         run: { p in
             let interval: Double = p.opt("--interval") ?? 1.0
-            let metricsStr: String? = p.opt("--metrics")
+            let metricStr: String? = p.opt("--metric", "--metrics")
             let maxCount: Int? = p.opt("--count")
 
             guard interval > 0 else { cmdError("--interval must be > 0") }
@@ -28,42 +35,62 @@ enum MonitorCmd: Cmd {
                 "gpu_metrics": GpuMetricsSource(),
             ]
 
-            // Select sources
-            let selected: [(String, MetricSource)]
-            if let s = metricsStr {
-                let names = s.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-                var found: [(String, MetricSource)] = []
-                var missing: [String] = []
-                for n in names {
-                    if let src = registry[n] {
-                        found.append((n, src))
+            // Enumerate every available column once to build the prefix-filter universe.
+            var allColumns: [ColumnRef] = []
+            for (key, src) in registry {
+                for s in src.sample() {
+                    let n = sanitizeMetricName(s.name)
+                    allColumns.append(ColumnRef(
+                        sourceKey: key,
+                        name: n,
+                        unit: s.unit,
+                        fullName: "\(key)_\(n)"
+                    ))
+                }
+            }
+
+            // Apply filters. A filter can be an exact source key or a prefix of the full
+            // column name (e.g. "smc_temp" selects all temperature columns; "smc_temp_cpu"
+            // selects only the CPU temperature subset).
+            let selectedColumns: [ColumnRef]
+            if let s = metricStr {
+                let filters = s.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                var matched = Set<ColumnRef>()
+                var unmatched: [String] = []
+                for f in filters {
+                    let hits = allColumns.filter { $0.sourceKey == f || $0.fullName.hasPrefix(f) }
+                    if hits.isEmpty {
+                        unmatched.append(f)
                     } else {
-                        missing.append(n)
+                        matched.formUnion(hits)
                     }
                 }
-                if !missing.isEmpty {
-                    cmdError("unknown metrics: \(missing.joined(separator: ",")). available: \(registry.keys.sorted().joined(separator: ", "))")
+                if !unmatched.isEmpty {
+                    cmdError("unknown metric filters: \(unmatched.joined(separator: ", ")). available sources: \(registry.keys.sorted().joined(separator: ", "))")
                 }
-                selected = found
+                selectedColumns = Array(matched)
             } else {
-                selected = registry.keys.sorted().map { ($0, registry[$0]!) }
+                selectedColumns = allColumns
             }
 
-            if selected.isEmpty {
-                cmdError("no metric sources selected")
+            if selectedColumns.isEmpty {
+                cmdError("no metric columns selected")
             }
 
-            // Pre-sample to establish column layout (sensor names are stable across samples for HID)
-            let layout: [(prefix: String, columns: [(name: String, unit: String)])] = selected.map { (key, src) in
-                let s = src.sample()
-                return (key, s.map { (sanitizeMetricName($0.name), $0.unit) })
+            // Preserve deterministic order: source keys sorted, columns in discovery order.
+            let selectedSources = registry.keys.sorted().compactMap { key -> (String, MetricSource, [(name: String, unit: String)])? in
+                let cols = selectedColumns
+                    .filter { $0.sourceKey == key }
+                    .map { (name: $0.name, unit: $0.unit) }
+                guard let src = registry[key], !cols.isEmpty else { return nil }
+                return (key, src, cols)
             }
 
             // Print header
             var header = "ts"
-            for entry in layout {
-                for col in entry.columns {
-                    header += "\t\(entry.prefix)_\(col.name)"
+            for (key, _, cols) in selectedSources {
+                for col in cols {
+                    header += "\t\(key)_\(col.name)"
                 }
             }
             print(header)
@@ -79,33 +106,18 @@ enum MonitorCmd: Cmd {
                 let ts = String(format: "%.3f", Date().timeIntervalSince1970)
                 var line = ts
 
-                for (i, (_, src)) in selected.enumerated() {
+                for (_, src, cols) in selectedSources {
                     let samples = src.sample()
-                    let expected = layout[i].columns
-
-                    // Align by position: HID sensor arrays are positionally stable across
-                    // samples on the same machine. Names are documentation; indices are the
-                    // contract. Only fall back to name matching if the sample count diverges.
-                    if samples.count == expected.count {
-                        for s in samples {
-                            if s.value.isNaN {
-                                line += "\t"
-                            } else {
-                                line += "\t\(s.value)"
-                            }
-                        }
-                    } else {
-                        var byName: [String: Double] = [:]
-                        for s in samples {
-                            byName[sanitizeMetricName(s.name)] = s.value
-                        }
-                        for col in expected {
-                            let v = byName[col.name] ?? Double.nan
-                            if v.isNaN {
-                                line += "\t"
-                            } else {
-                                line += "\t\(v)"
-                            }
+                    var byName: [String: Double] = [:]
+                    for s in samples {
+                        byName[sanitizeMetricName(s.name)] = s.value
+                    }
+                    for col in cols {
+                        let v = byName[col.name] ?? Double.nan
+                        if v.isNaN {
+                            line += "\t"
+                        } else {
+                            line += "\t\(v)"
                         }
                     }
                 }
@@ -123,9 +135,9 @@ enum MonitorCmd: Cmd {
     static func getTLDR() -> [TldrItem]? {
         [
             TldrItem(desc: "Stream all metrics at 1Hz (Ctrl+C to stop)", cmd: "macli monitor"),
-            TldrItem(desc: "Stream specific metrics at 2Hz", cmd: "macli monitor --interval 0.5 --metrics smc_temp,smc_curr"),
-            TldrItem(desc: "Stream battery power draw", cmd: "macli monitor --metrics battery_power"),
-            TldrItem(desc: "Stream GPU utilization (experimental)", cmd: "macli monitor --metrics gpu_metrics"),
+            TldrItem(desc: "Stream specific metrics at 2Hz", cmd: "macli monitor --interval 0.5 --metric smc_temp,smc_curr"),
+            TldrItem(desc: "Stream battery power draw", cmd: "macli monitor --metric battery_power"),
+            TldrItem(desc: "Stream GPU utilization (experimental)", cmd: "macli monitor --metric gpu_metrics"),
             TldrItem(desc: "Take 10 samples then exit", cmd: "macli monitor --count 10"),
             TldrItem(desc: "Downstream processing with awk", cmd: "macli monitor | awk -F'\\t' 'NR>1 {sum+=$2; n++} END {print sum/n}'"),
         ]
