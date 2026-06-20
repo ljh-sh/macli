@@ -64,6 +64,9 @@ x eget use --tag v0.4.2 ljh-sh/macli # install a specific release
 
 ### npm
 
+After install, verify the package with `npm audit signatures`.
+
+
 ```sh
 npm install -g @ljh-sh/macli
 ```
