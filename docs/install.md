@@ -51,6 +51,14 @@ x eget use ljh-sh/macli              # install latest to ~/.local/bin
 x eget use --tag v0.4.0 ljh-sh/macli # install a specific release
 ```
 
+## npm
+
+```sh
+npm install -g @ljh-sh/macli
+```
+
+The npm package downloads the universal macOS binary from the GitHub release during install.
+
 ## Build from source
 
 Requires Swift 5.10+ / macOS 12+.

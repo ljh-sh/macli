@@ -56,6 +56,14 @@ x eget use ljh-sh/macli              # 安装最新版到 ~/.local/bin
 x eget use --tag v0.4.0 ljh-sh/macli # 安装指定版本
 ```
 
+### npm
+
+```sh
+npm install -g @ljh-sh/macli
+```
+
+npm 包会在安装时从 GitHub release 下载通用 macOS 二进制。
+
 ### 源码编译
 
 需要 Swift 5.10+ / macOS 12+。
