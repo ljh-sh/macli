@@ -119,6 +119,8 @@ func runCmd(_ type: Cmd.Type, _ args: [String]) throws {
                         parsed.opts[optMeta.name] = raw
                     }
                 }
+            } else {
+                cmdError("unknown flag: \(optName)")
             }
         } else {
             parsed.args.append(a)
