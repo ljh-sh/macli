@@ -377,6 +377,11 @@ See [`changelog/`](changelog/) for versioned release notes, starting with [`v0.0
 
 ---
 
+## Code of Conduct
+
+This project follows the [Contributor Covenant Code of Conduct](./CODE_OF_CONDUCT.md).
+By participating, you are expected to uphold this code.
+
 ## License
 
 Apache 2.0 — see [LICENSE.txt](LICENSE.txt).
