@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 
 const pkg = require('./package.json');
@@ -20,31 +21,70 @@ if (process.platform !== 'darwin') {
 const binDir = path.join(__dirname, 'bin');
 const binaryPath = path.join(binDir, 'macli-binary');
 const tarPath = path.join(__dirname, `macli-darwin-universal.tar.xz`);
-const url = `https://github.com/ljh-sh/macli/releases/download/v${version}/macli-darwin-universal.tar.xz`;
+const baseUrl = `https://github.com/ljh-sh/macli/releases/download/v${version}`;
 
 fs.mkdirSync(binDir, { recursive: true });
 
-console.log(`Downloading macli v${version} for macOS...`);
-try {
-  execFileSync('curl', ['-fsSL', '-o', tarPath, url], { stdio: 'inherit' });
-} catch (err) {
-  console.error(`Failed to download macli from ${url}`);
-  process.exit(1);
+async function download(url) {
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'macli-npm-installer' },
+    redirect: 'follow',
+  });
+  if (!res.ok) {
+    throw new Error(`Download failed: HTTP ${res.status} for ${url}`);
+  }
+  return Buffer.from(await res.arrayBuffer());
 }
 
-const tmpDir = fs.mkdtempSync(path.join(__dirname, 'tmp-'));
-try {
-  execFileSync('tar', ['xJf', tarPath, '-C', tmpDir], { stdio: 'inherit' });
-  const extracted = path.join(tmpDir, 'bin', 'macli');
-  if (!fs.existsSync(extracted)) {
-    console.error('macli binary not found in downloaded tarball');
+async function getExpectedSha256() {
+  try {
+    const buf = await download(`${baseUrl}/SHA256SUMS`);
+    const line = buf.toString('utf8')
+      .split('\n')
+      .find((l) => l.trim().endsWith('macli-darwin-universal.tar.xz'));
+    return line ? line.trim().split(/\s+/)[0].toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+function sha256Buffer(buf) {
+  return crypto.createHash('sha256').update(buf).digest('hex');
+}
+
+(async () => {
+  try {
+    console.log(`Downloading macli v${version} for macOS...`);
+    const tarball = await download(`${baseUrl}/macli-darwin-universal.tar.xz`);
+
+    const expected = await getExpectedSha256();
+    if (expected) {
+      const actual = sha256Buffer(tarball);
+      if (actual !== expected) {
+        throw new Error(`SHA256 mismatch: expected ${expected}, got ${actual}`);
+      }
+      console.log('SHA256 checksum verified.');
+    }
+
+    fs.writeFileSync(tarPath, tarball);
+
+    const tmpDir = fs.mkdtempSync(path.join(__dirname, 'tmp-'));
+    try {
+      execFileSync('tar', ['xJf', tarPath, '-C', tmpDir], { stdio: 'inherit' });
+      const extracted = path.join(tmpDir, 'bin', 'macli');
+      if (!fs.existsSync(extracted)) {
+        throw new Error('macli binary not found in downloaded tarball');
+      }
+      fs.renameSync(extracted, binaryPath);
+      fs.chmodSync(binaryPath, 0o755);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      fs.rmSync(tarPath, { force: true });
+    }
+
+    console.log('macli installed successfully.');
+  } catch (err) {
+    console.error(`Failed to install macli: ${err.message}`);
     process.exit(1);
   }
-  fs.renameSync(extracted, binaryPath);
-  fs.chmodSync(binaryPath, 0o755);
-} finally {
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-  fs.rmSync(tarPath, { force: true });
-}
-
-console.log('macli installed successfully.');
+})();

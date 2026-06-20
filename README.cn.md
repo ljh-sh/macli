@@ -53,7 +53,7 @@ sudo mv bin/macli /usr/local/bin/
 
 ```sh
 x eget use ljh-sh/macli              # 安装最新版到 ~/.local/bin
-x eget use --tag v0.4.0 ljh-sh/macli # 安装指定版本
+x eget use --tag v0.4.2 ljh-sh/macli # 安装指定版本
 ```
 
 ### npm

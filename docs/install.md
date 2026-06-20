@@ -48,7 +48,7 @@ Via [x-cmd eget](https://x-cmd.com/mod/eget):
 
 ```sh
 x eget use ljh-sh/macli              # install latest to ~/.local/bin
-x eget use --tag v0.4.0 ljh-sh/macli # install a specific release
+x eget use --tag v0.4.2 ljh-sh/macli # install a specific release
 ```
 
 ## npm
