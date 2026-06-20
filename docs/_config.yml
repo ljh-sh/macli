@@ -1,5 +1,5 @@
 title: macli
-description: macOS system tools CLI for AI agents and shell pipelines
+description: Lightweight macOS system tools CLI for sensors, display, GPU, calendar, reminders, and shell pipelines.
 baseurl: "/macli"
 url: "https://ljh-sh.github.io"
 
@@ -12,6 +12,7 @@ kramdown:
 
 plugins:
   - jekyll-relative-links
+  - jekyll-sitemap
 
 relative_links:
   enabled: true
