@@ -42,6 +42,24 @@ jobs:
             echo "name=${REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Wait for release assets
+        env:
+          VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          asset_url="https://github.com/ljh-sh/macli/releases/download/v${VERSION}/macli-darwin-universal.tar.xz"
+          echo "Waiting for release asset: ${asset_url}"
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${asset_url}")
+            if [ "${code}" = "200" ]; then
+              echo "Release asset is available."
+              exit 0
+            fi
+            echo "Asset not ready yet (HTTP ${code}); sleeping 10s..."
+            sleep 10
+          done
+          echo "Timed out waiting for release assets." >&2
+          exit 1
+
       - name: Set npm version
         working-directory: ./npm
         run: npm version --no-git-tag-version "${{ steps.version.outputs.name }}"
