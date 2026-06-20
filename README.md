@@ -1,6 +1,7 @@
 # macli
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/ljh-sh/macli/badge)](https://scorecard.dev/)
+[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/10315/badge)](https://bestpractices.coreinfrastructure.org/projects/10315)
 [![CI](https://github.com/ljh-sh/macli/actions/workflows/ci.yml/badge.svg)](https://github.com/ljh-sh/macli/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/badge/Docs-website-blue.svg)](https://ljh-sh.github.io/macli)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.txt)
