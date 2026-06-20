@@ -371,7 +371,7 @@ Streaming TSV monitor. Single process, all metric sources, downstream `awk`-frie
 
 ```sh
 macli monitor
-macli monitor --interval 1 --metrics smc_temp,smc_curr
+macli monitor --interval 1 --metric smc_temp,smc_curr
 macli monitor --count 10 --interval 0.5
 ```
 
@@ -380,7 +380,7 @@ Flags:
 | Flag | Type | Default | Meaning |
 |---|---|---|---|
 | `--interval` | number | `1.0` | Seconds between samples (decimals allowed) |
-| `--metrics` | string | all | Comma-separated source names |
+| `--metric` | string | all | Comma-separated source or column-prefix filters. `--metrics` is accepted as a legacy alias. |
 | `--count` | int | infinite | Exit after N samples |
 
 Available metric sources:

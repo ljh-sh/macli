@@ -99,12 +99,7 @@ Output schema: `{"ok": true, ...}` on success, `{"ok": false, "error": "...", "h
 
 ## Roadmap
 
-- [x] SMC sensor snapshot, streaming monitor, EventKit
-- [x] Battery health (`macli battery`)
-- [x] SSD health (`macli ssd`)
-- [x] Display brightness & GPU info (`macli display`, `macli gpu`)
-
-See [ROADMAP.md](ROADMAP.md) for details.
+See [ROADMAP.md](ROADMAP.md) for the current roadmap and completed milestones.
 
 ---
 
@@ -172,7 +167,7 @@ macli battery | jq -e '.healthPercent < 80' && echo "consider replacement"
 macli battery --tsv | awk -F'\t' '/^cycleCount|^temperature/{print strftime("%Y-%m-%dT%H:%M:%S"), $1, $2}' >> battery.log
 
 # Monitor system + battery power draw in real time
-macli monitor --metrics battery_power --interval 1
+macli monitor --metric battery_power --interval 1
 ```
 
 ### Display & GPU
@@ -192,7 +187,7 @@ macli gpu info --tsv                    # tab-separated output
 `monitor` can also stream GPU utilization (experimental, Apple Silicon only):
 
 ```sh
-macli monitor --metrics gpu_metrics --interval 1
+macli monitor --metric gpu_metrics --interval 1
 ```
 
 ### Design: agent-oriented
@@ -217,16 +212,16 @@ This keeps `macli --help` short (saves tokens when an LLM loads it as context). 
 `monitor` samples sensor sources on an interval and streams TSV — one row per sample. Single process, no subprocess fork per poll, no Python interpreter per tick. Designed as a long-running pipe stage for `awk`.
 
 ```sh
-macli monitor --interval 1 --metrics smc_temp,smc_curr
-macli monitor --count 10 --interval 0.5 --metrics smc_temp \
+macli monitor --interval 1 --metric smc_temp,smc_curr
+macli monitor --count 10 --interval 0.5 --metric smc_temp \
   | awk -F'\t' 'NR>1 {sum+=$2; n++} END {print "avg:", sum/n}'
-macli monitor --metrics gpu_metrics --interval 1   # GPU utilization (experimental)
+macli monitor --metric gpu_metrics --interval 1   # GPU utilization (experimental)
 ```
 
 Flags:
 
 - `--interval N` — seconds between samples (supports decimals, default 1.0)
-- `--metrics list` — comma-separated sources (default: all). Sources: `smc_temp`, `smc_volt`, `smc_curr`, `battery_power`, `gpu_metrics`
+- `--metric list` — comma-separated source or column-prefix filters (default: all). Sources: `smc_temp`, `smc_volt`, `smc_curr`, `battery_power`, `gpu_metrics`. Prefixes such as `smc_temp_cpu` select only matching columns.
 - `--count N` — exit after N samples (default: infinite, Ctrl-C to stop)
 
 The header row locks column order; subsequent rows match positionally. `awk -F'\t'` is the intended downstream.
