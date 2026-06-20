@@ -2,6 +2,7 @@
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/ljh-sh/macli/badge)](https://scorecard.dev/)
 [![CI](https://github.com/ljh-sh/macli/actions/workflows/ci.yml/badge.svg)](https://github.com/ljh-sh/macli/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/Docs-website-blue.svg)](https://ljh-sh.github.io/macli)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.txt)
 
 > 最小上下文，最大灵活性 —— 面向 AI agent 的 macOS 系统工具。原生 Apple framework。AI 友好的 JSON/TSV 输出。
@@ -11,6 +12,8 @@
 用它，当你（或你的 AI agent）需要问 macOS 一些 `system_profiler` / `ioreg` / `osascript` 答不出或答得很烂的问题：*CPU 此刻的核心温度*、*以 1 Hz 把传感器流式喂给 awk*、*今天日历的 JSON*。
 
 镜像：[github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg.org/ljh-sh/macli](https://codeberg.org/ljh-sh/macli)
+
+文档：[ljh-sh.github.io/macli](https://ljh-sh.github.io/macli)
 
 ## 面向 AI agent
 
@@ -237,6 +240,11 @@ macli aka set work <calendar-id>            # 给日历 ID 设 alias，方便引
 - **错误**：`{"ok": false, "error": "...", "hint": "..."}` —— 从不沉默。
 
 ---
+
+## FAQ
+
+完整 FAQ 见文档站：[ljh-sh.github.io/macli/faq](https://ljh-sh.github.io/macli/faq)。  
+源文件：[docs/faq.md](docs/faq.md)。
 
 ## FAQ：安装与权限
 
