@@ -55,6 +55,8 @@ x eget use --tag v0.4.2 ljh-sh/macli # install a specific release
 
 ```sh
 npm install -g @ljh-sh/macli
+
+The npm package is published from GitHub Actions. Run `npm audit signatures` after install to verify package integrity.
 ```
 
 The npm package downloads the universal macOS binary from the GitHub release during install.
