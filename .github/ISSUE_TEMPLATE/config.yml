@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/ljh-sh/macli/security/advisories/new
+    about: Please report security issues privately.
+  - name: Ask a question
+    url: https://github.com/ljh-sh/macli/discussions
+    about: Use Discussions for questions and ideas.
