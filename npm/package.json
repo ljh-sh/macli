@@ -1,0 +1,38 @@
+{
+  "name": "@ljh-sh/macli",
+  "version": "0.0.0",
+  "description": "Lightweight macOS system tools CLI for sensors, display, GPU, calendar, reminders, and shell pipelines.",
+  "keywords": [
+    "macos",
+    "cli",
+    "system",
+    "sensors",
+    "smc",
+    "gpu",
+    "display",
+    "calendar",
+    "reminders"
+  ],
+  "homepage": "https://github.com/ljh-sh/macli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ljh-sh/macli.git"
+  },
+  "license": "Apache-2.0",
+  "bin": {
+    "macli": "./bin/macli"
+  },
+  "files": [
+    "bin/",
+    "install.js"
+  ],
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
