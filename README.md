@@ -376,6 +376,13 @@ See [`changelog/`](changelog/) for versioned release notes, starting with [`v0.0
 
 ---
 
+## Reproducible builds
+
+macli releases are built deterministically in GitHub Actions. The build pins
+`SOURCE_DATE_EPOCH`, disables variable timestamps, and produces bit-for-bit
+reproducible tarballs on Apple Silicon. See `.x-cmd/release.common.sh` for the
+exact environment and `BUILD_INFO.txt` in each release for build parameters.
+
 ## Support
 
 - Read the [docs](https://ljh-sh.github.io/macli).
