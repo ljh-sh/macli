@@ -391,3 +391,17 @@ By participating, you are expected to uphold this code.
 
 Apache 2.0 — see [LICENSE.txt](LICENSE.txt).
 
+
+## Verifying releases
+
+Release tarballs are signed with [Sigstore/cosign](https://www.sigstore.dev/). Each
+release includes `.sigstore.json` bundles for the tarballs, `SHA256SUMS`, and
+`BUILD_INFO.txt`. Verify a tarball with:
+
+```sh
+cosign verify-blob \
+  --bundle macli-darwin-universal.tar.xz.sigstore.json \
+  --certificate-identity-regexp '^https://github.com/ljh-sh/macli/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  macli-darwin-universal.tar.xz
+```
