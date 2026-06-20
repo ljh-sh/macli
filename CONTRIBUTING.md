@@ -10,7 +10,7 @@ Open a [GitHub issue](../../issues) and include:
 - macli version (`macli --version`)
 - The exact command you ran
 - Expected vs actual output
-- If relevant, the full JSON output (`macli <cmd> --json`)
+- If relevant, the full JSON output (`macli <cmd>`)
 
 ## Feature requests
 
