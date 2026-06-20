@@ -13,4 +13,6 @@ Only the latest release receives security updates.
 
 Please report security vulnerabilities privately by emailing [lijunhao@x-cmd.com](mailto:lijunhao@x-cmd.com).
 
-Do not open a public issue for security problems. We will respond as quickly as possible and coordinate a fix and disclosure.
+Do not open a public issue for security problems. We will acknowledge receipt within
+5 business days, provide a timeline for a fix within 14 business days, and coordinate
+a disclosure date with you.
