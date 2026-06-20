@@ -44,3 +44,10 @@ The binary will be at `.build/release/macli`.
 ## License
 
 By contributing, you agree that your contributions will be licensed under the Apache 2.0 License.
+
+## Branch protection and reviews
+
+All changes to `main` must go through a pull request and be reviewed by a code owner.
+Do not push directly to `main` or use administrator bypass, even for small changes.
+This keeps the project eligible for downstream security scorecards and ensures every
+change is seen by at least one other maintainer.
