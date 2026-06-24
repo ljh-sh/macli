@@ -596,6 +596,49 @@ sudo bclm write 80
 
 ---
 
+## `macli battery` 与 `batt` / `bclm` 的关系
+
+一句话：**不是替代关系，是互补关系。**
+
+| 能力 | `macli battery` | `batt` | `bclm` |
+|---|---|---|---|
+| 核心目标 | **观测 / 诊断 / 遥测** | **控制充电**（Apple Silicon） | **控制充电**（Intel） |
+| 能否设充电上限 | ❌ | ✅ `batt limit 80` | ✅ `bclm write 80` |
+| 能否暂停/恢复充电 | ❌ | ✅ `batt adapter disable/enable` | ❌ |
+| 字段数量 | ~150+ | 仅状态所需（电量、是否充电、限制值等） | 无 |
+| 电芯级数据 | ✅ `cellVoltages`、`cellVoltageDelta`、`qmax`、`raTableRaw` | ❌ | ❌ |
+| 适配器/PD 诊断 | ✅ `adapter.usbHvcMenu`、`fedDetails`、`portControllerInfo` | ❌ | ❌ |
+| 生命周期数据 | ✅ `lifetimeData.*` | ❌ | ❌ |
+| 二进制 blob 解码 | ✅ `raTableRaw`、`batteryStateBytes`、`mfgDataAscii` | ❌ | ❌ |
+| 是否需要守护进程 | 否 | 是 | 否 |
+| 平台 | Apple Silicon / Intel | Apple Silicon | Intel |
+
+### 为什么 `batt` 不能替代 `macli battery`？
+
+`batt` 的定位非常聚焦：**把充电上限这件事做透**。它的 `batt status` 只会输出控制充电所需的最小信息（当前电量、是否在充电、限制值等），不会给你：
+
+- 每个电芯的电压和内阻；
+- USB-C PD 适配器的 PDO 档位和接了什么设备；
+- 电池/充电器的原始状态字节；
+- 生命周期温度、最大放电电流等诊断数据。
+
+反过来说，`macli battery` 永远也不会去控制充电——这是两个不同的问题域。
+
+### 推荐搭配
+
+```sh
+# 1. 用 macli battery 做全面体检
+macli battery | jq '{healthPercent, cycleCount, cellVoltageDelta, temperature}'
+
+# 2. 如果需要，再用 batt 设置充电上限（Apple Silicon）
+sudo batt limit 80
+
+# 3. 用 macli battery 验证 batt 是否生效
+macli battery | jq '{stateOfCharge, isCharging, externalConnected, chargerPower: .charger.powerWatts}'
+```
+
+---
+
 ## 数据布局说明
 
 `macli battery` 的输出布局遵循以下原则：
