@@ -201,7 +201,7 @@ macli battery | jq '.raTableRaw'
 macli battery | jq '{externalConnected, isCharging, fullyCharged, notChargingReason: .charger.notChargingReason}'
 ```
 
-See the full field reference and advanced guide: [`docs/battery.md`](docs/battery.md).
+`macli battery` is **read-only** — it observes and reports, but does not control charging. To set charge limits or pause charging, use **System Settings → Battery → Battery Health** (official), or third-party tools like `batt` (Apple Silicon) / `bclm` (Intel). See [`docs/battery.md`](docs/battery.md) for the full guide and trade-offs.
 
 ---
 

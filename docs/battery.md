@@ -533,6 +533,69 @@ macli battery --tsv > battery.tsv
 
 ---
 
+## 控制充电：macli battery 只读，控制请用这些工具
+
+`macli battery` 是**观测/诊断工具**，它只读取 `IOKit` 数据，不修改电池或充电行为。如果你需要限制充电、暂停充电或做自动校准，请使用以下方案。
+
+### 1. 官方原生方式（最稳，但功能有限）
+
+macOS 官方目前只提供**图形界面**的充电控制：
+
+- **System Settings → Battery → Battery Health → Optimized Battery Charging**  
+  让系统根据你的作息，在夜间暂缓充到 100%。
+- **80% Limit**（部分 Apple Silicon 机型、较新 macOS）  
+  直接把充电上限锁在 80%，适合长期插电使用。
+
+优点：Apple 官方支持，无需额外软件，系统升级不会失效。  
+缺点：没有 CLI，不能自定义百分比（除非机型支持 80% Limit），策略由系统决定。
+
+### 2. `pmset` — 原生命令，但只能看不能控
+
+`pmset` 是 macOS 自带的电源管理工具，可以查看电池和电源状态：
+
+```sh
+pmset -g batt        # 当前电池状态
+pmset -g ps         # 电源源状态
+pmset -g rawlog     # 原始电池状态日志
+pmset -g log        # 电源事件日志
+```
+
+但它**没有充电限制功能**。它管理的是睡眠、唤醒、显示器关闭、低电量模式等系统电源策略，不是电池充电阈值。
+
+### 3. 第三方 CLI 控制工具（功能强，但非官方）
+
+| 工具 | 适用平台 | 原理 | 特点 |
+|---|---|---|---|
+| `batt` | Apple Silicon | 逆向 Apple 电源管理私有 API，通过守护进程控制充电 | 功能丰富：上下限、定时校准、切电源、睡眠前停止充电 |
+| `bclm` | Intel | 通过 SMC 设置 `BCLM` 键 | 轻量，但 Apple Silicon 不支持 |
+| `AlDente` | Apple Silicon / Intel | 商业工具，使用 IOKit 私有 API | 有 GUI，功能多，部分功能付费 |
+
+```sh
+# batt（Apple Silicon）设置 80% 上限
+brew install batt
+sudo batt limit 80
+
+# bclm（Intel）设置 80% 上限
+brew tap zackelia/formulae
+brew install bclm
+sudo bclm write 80
+```
+
+> ⚠️ 这些工具都依赖未公开的接口或私有 API。macOS 大版本更新后可能需要等待工具更新，且不在 Apple 官方支持范围内。
+
+### 4. 和 `macli battery` 的配合
+
+推荐组合：
+
+1. 日常充电策略用 **System Settings**（最稳）。
+2. 用 `macli battery` 做遥测，验证策略是否生效：
+   ```sh
+   macli battery | jq '{stateOfCharge, isCharging, externalConnected, chargerPower: .charger.powerWatts}'
+   ```
+3. 如果需要脚本化、自定义百分比控制，再考虑 `batt` / `bclm`，并接受它们是私有/非官方方案。
+
+---
+
 ## 数据布局说明
 
 `macli battery` 的输出布局遵循以下原则：
