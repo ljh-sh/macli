@@ -539,15 +539,17 @@ macli battery --tsv > battery.tsv
 
 ### 1. 官方原生方式（最稳）
 
-macOS 官方提供**图形界面**的充电控制：
+macOS 官方提供**图形界面**的充电控制，注意区分“学习型延迟充电”和“硬上限”：
 
-- **System Settings → Battery → Battery Health → Optimized Battery Charging**  
-  让系统根据你的作息，在夜间暂缓充到 100%。
-- **80% Limit**（部分 Apple Silicon 机型、较新 macOS）  
-  直接把充电上限锁在 80%，适合长期插电使用。
-- **Charging Limit（80%–100% 可调）**（macOS 26.4 及更高版本，据 [charlie0129/batt](https://github.com/charlie0129/batt) 项目公告）  
-  系统原生支持将充电上限在 80% 到 100% 之间调节，无需第三方工具。  
-  设置路径：**System Settings → Battery → 充电 → 充电上限**。
+| 功能 | 路径 | 机制 | 最终行为 |
+|---|---|---|---|
+| **Optimized Battery Charging** | Battery Health → Optimized Battery Charging | 系统学习你的作息 | 先停到 80%，快用之前再充满到 **100%** |
+| **80% Limit** | Battery Health → 80% Limit | 硬上限 | 永远只充到 **80%** |
+| **Charging Limit（80%–100% 可调）** | **System Settings → Battery → 充电 → 充电上限** | 硬上限 | 永远只充到你选的值（如 80%、90%） |
+
+> 重要：**Optimized Battery Charging 最终还是会充满到 100%**，只是延迟最后 20% 的充电时间。如果你希望长期插电时电池停在 80% 或更低，必须开 **80% Limit / Charging Limit**，而不是 Optimized Battery Charging。
+
+Charging Limit（80%–100% 可调）是 macOS 26.4 及更高版本新增的原生功能（据 [charlie0129/batt](https://github.com/charlie0129/batt) 项目公告），无需第三方工具。
 
 优点：Apple 官方支持，无需额外软件，系统升级不会失效。  
 缺点：依然没有 CLI；如果需要低于 80% 的限制，仍需第三方工具。
