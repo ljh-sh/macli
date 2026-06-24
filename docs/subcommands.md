@@ -200,7 +200,7 @@ Intel sensor objects also include a `key` field — the 4-character SMC key.
 
 ## `macli battery`
 
-Battery snapshot via IOKit (`AppleSmartBattery`).
+Battery snapshot via IOKit (`AppleSmartBattery`). The current output is the full/detail set; a future release will add a `--detail` flag and default to a smaller subset, keeping the same field names.
 
 ```sh
 macli battery         # JSON (default)
@@ -208,7 +208,7 @@ macli battery --tsv   # TSV
 macli battery --plist # raw IORegistry XML plist
 ```
 
-JSON output fields:
+Key fields:
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -224,30 +224,17 @@ JSON output fields:
 | `nominalChargeCapacity` | int | Nominal charge capacity in mAh |
 | `healthPercent` | number | `maxCapacity / designCapacity * 100` |
 | `voltage` | int | Pack voltage in mV |
-| `amperage` | int | Instant amperage in mA |
-| `instantAmperage` | int | Instant amperage (alternate register) in mA |
-| `designWh` | number | Design energy in Wh |
-| `currentWh` | number | Current energy in Wh |
+| `amperage` | int | Average amperage in mA |
+| `instantAmperage` | int | Instant amperage in mA |
 | `temperature` | number | Pack temperature in °C |
-| `virtualTemperature` | number | Virtual temperature in °C |
 | `cycleCount` | int | Charge cycle count |
-| `timeRemaining` | int | Estimated time remaining in minutes |
-| `avgTimeToEmpty` | int | Average time to empty in minutes |
-| `avgTimeToFull` | int | Average time to full in minutes |
-| `serialNumber` | string | Battery serial |
-| `deviceName` | string | Device name from registry |
-| `cellVoltages` | array | Per-cell voltages in V |
-| `qmax` | array | Qmax values per cell |
-| `manufactureDate` | int | Manufacture date code |
-| `batterySerial` | string | BatteryData serial |
-| `adapter` | object | `{watts, voltage, current, description}` |
-| `inputPower` | number | Adapter watts |
-| `charger` | object | `{voltage, current}` |
+| `serialNumber` | string | System-level battery serial |
+| `batterySerial` | string | Gas-gauge battery serial |
+| `adapter` | object | Adapter details (`watts`, `current`, `adapterVoltage`, ...) |
+| `charger` | object | Charger details (`voltage`, `current`, `notChargingReason`, ...) |
 | `systemPower` | number | System power draw in W |
-| `batteryPower` | number | Battery power draw in W |
-| `systemVoltageIn` | number | System input voltage |
-| `systemCurrentIn` | number | System input current |
-| `note` | string | Present when no battery is found |
+
+The full field reference — including `BatteryData`, `PowerTelemetryData`, `FedDetails`, `PortControllerInfo`, `LifetimeData`, and why `serialNumber`/`batterySerial` may differ — is in [`battery.md`](./battery.md).
 
 <div class="note" markdown="1">
 
