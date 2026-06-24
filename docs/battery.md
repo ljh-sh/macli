@@ -368,6 +368,60 @@ macli battery --tsv > battery.tsv
 
 ---
 
+## 数据布局说明
+
+`macli battery` 的输出布局遵循以下原则：
+
+1. **兼容优先**：所有已有的顶层字段（`designCapacity`、`maxCapacity`、`healthPercent` 等）位置和名字不变。
+2. **一个 IOKit key 尽量对应一个 JSON key**：新增字段不合并、不重新分组。
+3. **只有多实例或结构复杂的数据才嵌套**：
+   - `adapter` 是对象，因为适配器信息包含多个子字段。
+   - `rawAdapterDetails`、`fedDetails`、`portControllerInfo` 是数组，因为 macOS 按 USB-C 口提供多份数据。
+   - `lifetimeData`、`carrierMode`、`deadBatteryBootData` 是对象，因为它们在 IOKit 里本身就是嵌套字典。
+4. **命名风格**：
+   - 顶层历史字段和新增标量字段使用 camelCase。
+   - 嵌套对象/数组内部保留 IOKit 原始 PascalCase 键名，避免 invent mapping。
+
+**优点**：`jq '.healthPercent'` 直接取值，不破坏旧脚本。  
+**代价**：顶层键很多（约 150 个），第一眼会比较 overwhelm。后续 `--detail` 开关会把默认输出精简到 15~20 个常用字段。
+
+---
+
+## 如何用 ioreg 查看 macli 未输出的字段
+
+macli 为了兼容、体积和可读性，跳过了 IO 元数据和大块二进制 blob。如果你需要这些原始字段，直接用 `ioreg`：
+
+```sh
+# 1. 查看完整原始快照
+ioreg -n AppleSmartBattery -r -l
+
+# 2. 保存为 plist 并用 plutil 查看（更结构化）
+ioreg -n AppleSmartBattery -r -a -l > /tmp/battery.plist
+plutil -p /tmp/battery.plist
+
+# 3. 只看被 macli 跳过的二进制/大块字段
+ioreg -n AppleSmartBattery -r -l | \
+  grep -E -A2 'RaTableRaw|iMaxAndSocSmoothTable|"BatteryState"|"ChargerStatus"|TimeAtHighSoc|"Raw"|PortControllerEvtBuffer'
+
+# 4. 查看 BatteryData 里被 macli 故意去重的字段
+#    （它们已在根级输出为 designCapacity / maxCapacityPercent / voltage / gaugeCycleCount）
+ioreg -n AppleSmartBattery -r -l | \
+  grep -A40 '"BatteryData"' | \
+  grep -E 'DesignCapacity|MaxCapacity|Voltage|CycleCount'
+
+# 5. 查看所有 IO 元数据（IOObjectClass、IORegistryEntryID 等）
+ioreg -n AppleSmartBattery -r -l | grep -E 'IO(Object|Registry|Report|Service)'
+```
+
+说明：
+
+- `RaTableRaw`、`iMaxAndSocSmoothTable` 是电池算法内部表格，对人类可读性极低。
+- `BatteryState`、`ChargerStatus`、`MfgData`、`ManufacturerData` macli 已输出 hex 字符串版本。
+- `LifetimeData.Raw`、`TimeAtHighSoc` 是时间序列二进制数据。
+- `PortControllerEvtBuffer` 是每个 USB-C 口的原始事件 buffer，通常 512 字节左右。
+
+---
+
 ## 常见问题
 
 **Q：输出字段这么多，是不是 bug？**
