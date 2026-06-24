@@ -75,6 +75,41 @@
     return hex;
 }
 
++ (NSArray<NSNumber *> *)uint16ArrayFromData:(NSData *)data {
+    if (!data || data.length == 0) return nil;
+    const unsigned char *bytes = (const unsigned char *)data.bytes;
+    NSUInteger count = data.length / 2;
+    NSMutableArray<NSNumber *> *out = [NSMutableArray arrayWithCapacity:count];
+    for (NSUInteger i = 0; i < count; i++) {
+        uint16_t value = ((uint16_t)bytes[i * 2] << 8) | (uint16_t)bytes[i * 2 + 1];
+        [out addObject:@(value)];
+    }
+    return out;
+}
+
++ (NSArray<NSNumber *> *)uint8ArrayFromData:(NSData *)data {
+    if (!data || data.length == 0) return nil;
+    const unsigned char *bytes = (const unsigned char *)data.bytes;
+    NSMutableArray<NSNumber *> *out = [NSMutableArray arrayWithCapacity:data.length];
+    for (NSUInteger i = 0; i < data.length; i++) {
+        [out addObject:@(bytes[i])];
+    }
+    return out;
+}
+
++ (NSString *)asciiStringFromData:(NSData *)data {
+    if (!data || data.length == 0) return nil;
+    const unsigned char *bytes = (const unsigned char *)data.bytes;
+    NSMutableString *ascii = [NSMutableString string];
+    for (NSUInteger i = 0; i < data.length; i++) {
+        unsigned char c = bytes[i];
+        if (c >= 32 && c < 127) {
+            [ascii appendFormat:@"%c", c];
+        }
+    }
+    return ascii.length > 0 ? ascii : nil;
+}
+
 /// Recursively convert IOKit values to JSON-friendly values.
 /// NSData is dropped (opaque binary). Nested dictionaries/arrays are preserved.
 + (id)jsonFriendlyValue:(id)value {
@@ -243,6 +278,9 @@
     if (voltage && currentCapacity) {
         info[@"currentWh"] = @([voltage doubleValue] * [currentCapacity doubleValue] / 1000000.0);
     }
+    if (voltage && maxCapacity) {
+        info[@"estimatedFullChargeWh"] = @([voltage doubleValue] * [maxCapacity doubleValue] / 1000000.0);
+    }
 
     // MARK: - Voltage / current
     if (voltage) info[@"voltage"] = voltage;
@@ -252,6 +290,9 @@
 
     NSNumber *instantAmperage = [self numberAtPath:@[@"InstantAmperage"] inSnapshot:snapshot];
     if (instantAmperage) info[@"instantAmperage"] = instantAmperage;
+    if (voltage && instantAmperage) {
+        info[@"instantPowerWatts"] = @([voltage doubleValue] * [instantAmperage doubleValue] / 1000000.0);
+    }
 
     NSNumber *appleRawBatteryVoltage = [self numberAtPath:@[@"AppleRawBatteryVoltage"] inSnapshot:snapshot];
     if (appleRawBatteryVoltage) info[@"appleRawBatteryVoltage"] = appleRawBatteryVoltage;
@@ -296,6 +337,8 @@
     if ([manufacturerData isKindOfClass:[NSData class]]) {
         NSString *hex = [self hexStringFromData:manufacturerData];
         if (hex) info[@"manufacturerData"] = hex;
+        NSString *ascii = [self asciiStringFromData:manufacturerData];
+        if (ascii) info[@"manufacturerDataAscii"] = ascii;
     }
 
     // MARK: - BatteryData
@@ -382,6 +425,24 @@
             if (ra) info[[raKey lowercaseString]] = ra;
         }
 
+        NSArray *raTableRaw = [self arrayAtPath:@[@"RaTableRaw"] inSnapshot:batteryData];
+        if (raTableRaw) {
+            NSMutableArray *tables = [NSMutableArray array];
+            for (id item in raTableRaw) {
+                if ([item isKindOfClass:[NSData class]]) {
+                    NSArray *table = [self uint16ArrayFromData:item];
+                    if (table) [tables addObject:table];
+                }
+            }
+            if (tables.count > 0) info[@"raTableRaw"] = tables;
+        }
+
+        NSData *iMaxAndSocSmoothTable = [self valueAtPath:@[@"iMaxAndSocSmoothTable"] inSnapshot:batteryData];
+        if ([iMaxAndSocSmoothTable isKindOfClass:[NSData class]]) {
+            NSString *hex = [self hexStringFromData:iMaxAndSocSmoothTable];
+            if (hex) info[@"iMaxAndSocSmoothTable"] = hex;
+        }
+
         NSNumber *batteryDataSystemPower = [self numberAtPath:@[@"SystemPower"] inSnapshot:batteryData];
         if (batteryDataSystemPower) info[@"batteryDataSystemPower"] = batteryDataSystemPower;
 
@@ -440,12 +501,20 @@
         NSArray *cellVoltages = batteryData[@"CellVoltage"];
         if ([cellVoltages isKindOfClass:[NSArray class]]) {
             NSMutableArray *volts = [NSMutableArray array];
+            double minCellV = DBL_MAX;
+            double maxCellV = -DBL_MAX;
             for (id v in cellVoltages) {
                 if ([v isKindOfClass:[NSNumber class]]) {
-                    [volts addObject:@([v doubleValue] / 1000.0)];
+                    double volt = [v doubleValue] / 1000.0;
+                    [volts addObject:@(volt)];
+                    if (volt < minCellV) minCellV = volt;
+                    if (volt > maxCellV) maxCellV = volt;
                 }
             }
             info[@"cellVoltages"] = volts;
+            if (maxCellV >= minCellV) {
+                info[@"cellVoltageDelta"] = @(maxCellV - minCellV);
+            }
         }
 
         NSArray *qmax = [self arrayAtPath:@[@"Qmax"] inSnapshot:batteryData];
@@ -461,12 +530,16 @@
         if ([batteryState isKindOfClass:[NSData class]]) {
             NSString *hex = [self hexStringFromData:batteryState];
             if (hex) info[@"batteryState"] = hex;
+            NSArray *bytes = [self uint8ArrayFromData:batteryState];
+            if (bytes) info[@"batteryStateBytes"] = bytes;
         }
 
         NSData *mfgData = [self valueAtPath:@[@"MfgData"] inSnapshot:batteryData];
         if ([mfgData isKindOfClass:[NSData class]]) {
             NSString *hex = [self hexStringFromData:mfgData];
             if (hex) info[@"mfgData"] = hex;
+            NSString *ascii = [self asciiStringFromData:mfgData];
+            if (ascii) info[@"mfgDataAscii"] = ascii;
         }
 
         // LifetimeData (skip opaque binary blobs)
@@ -626,6 +699,12 @@
         if ([chargerStatus isKindOfClass:[NSData class]]) {
             NSString *hex = [self hexStringFromData:chargerStatus];
             if (hex) charger[@"status"] = hex;
+            NSArray *bytes = [self uint8ArrayFromData:chargerStatus];
+            if (bytes) charger[@"statusBytes"] = bytes;
+        }
+
+        if (chargingVoltage && chargingCurrent) {
+            charger[@"powerWatts"] = @([chargingVoltage doubleValue] * [chargingCurrent doubleValue] / 1000000.0);
         }
 
         NSNumber *vacVoltageLimit = chargerData[@"VacVoltageLimit"];

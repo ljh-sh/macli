@@ -1,17 +1,38 @@
 ---
 layout: default
-title: Battery field reference
+title: Battery field reference and power-user guide
 ---
 
-# `macli battery` 字段详解
+# `macli battery` 字段详解与诊断手册
 
-`macli battery` 读取 macOS IOKit 的 `AppleSmartBattery` 服务，把电池、充电器、电源遥测等数据整理成可直接用 `jq` 处理的 JSON。本文档解释每个字段的来源、单位、参考值和使用场景。
+`macli battery` 读取 macOS IOKit 的 `AppleSmartBattery` 服务，把电池、充电器、电源遥测等数据整理成可直接用 `jq` 处理的 JSON。它是 `ioreg -n AppleSmartBattery -r` 的**严格超集**：除了 IO 元数据，几乎所有标量、数组、嵌套对象都被保留，并且增加了单位换算、派生指标和二进制 blob 解码。
 
 > 当前版本输出的是 **完整/详细模式**；以后会增加 `--detail` 开关，默认输出精简子集，但字段名和结构保持不变。
 
 ---
 
-## 与 `ioreg` 的关系
+## 30 秒上手
+
+```sh
+# 核心状态
+macli battery | jq '{status, stateOfCharge, healthPercent, cycleCount, temperature}'
+
+# 功率流（电池输出功率、系统功耗、输入功率、瞬时功率）
+macli battery | jq '{instantPowerWatts, batteryPower, systemPower, inputPower}'
+
+# 电芯平衡（delta > 0.05 V 要留意）
+macli battery | jq '{cellVoltages, cellVoltageDelta}'
+
+# 解码后的每电芯内阻表
+macli battery | jq '.raTableRaw'
+
+# 导出 TSV 给 Excel / Numbers / R
+macli battery --tsv > battery.tsv
+```
+
+---
+
+## 为什么用 `macli battery` 而不是 `ioreg`？
 
 `ioreg -n AppleSmartBattery -r -l` 已经把几乎所有原始数据展示出来了，但它有几点不便：
 
@@ -19,13 +40,18 @@ title: Battery field reference
 |---|---|---|
 | 输出格式 | XML/Plist 风格文本 | 直接是 JSON |
 | 单位换算 | 原始数值，需手动除 100/1000 | 已换算好（温度 °C、电压 V、功率 W 等） |
-| 派生指标 | 无 | `healthPercent`、`designWh`、`currentWh` |
+| 派生指标 | 无 | `healthPercent`、`designWh`、`currentWh`、`cellVoltageDelta`、`instantPowerWatts` |
+| 二进制 blob | `RaTableRaw`、`BatteryState` 等是原始 `<...>` 数据 | `raTableRaw`、`batteryStateBytes`、`mfgDataAscii` 等已解码 |
 | 键名稳定性 | 不同 macOS 版本可能变化 | macli 尽量保持稳定 |
 | 脚本友好 | 需要 grep/awk/plist 解析 | `jq` 直接取值 |
 | TSV 输出 | 无 | `macli battery --tsv` |
 | 与 monitor 集成 | 无 | `macli monitor` 可取电池功率流 |
 
 所以：**`ioreg` 能看原始数据，`macli battery` 帮你把数据变成可编程、可对比、可监控的格式**。两者不是替代关系，而是分层：底层探查用 `ioreg`，脚本/监控/告警用 `macli`。
+
+### 与 `system_profiler SPPowerDataType` 的对比
+
+`system_profiler` 只给出人类可读的摘要（循环次数、状态、最大容量百分比）。`macli battery` 则提供**原始遥测**：每个电芯电压、充电器状态、PD 适配器档位、电量计内部标志、生命周期数据等。
 
 ---
 
@@ -87,6 +113,126 @@ macli battery | jq '.adapter | {voltage, adapterVoltage}'
 
 ---
 
+## 诊断脚本手册
+
+下面这些脚本可以直接复制使用。它们展示了 `macli battery` 如何超越“查看信息”，变成真正的诊断工具。
+
+### 1. 健康度与寿命
+
+```sh
+# 健康度低于 80% 时报警
+macli battery | jq -e '.healthPercent < 80' && echo "考虑更换电池"
+
+# 循环次数 + 设计寿命，算剩余寿命比例
+macli battery | jq '{cycleCount, designCycleCount, lifeUsedPercent: (.cycleCount / .designCycleCount * 100)}'
+
+# 温度换算成华氏度
+macli battery | jq '{celsius: .temperature, fahrenheit: (.temperature * 9 / 5 + 32)}'
+```
+
+### 2. 功率与充电
+
+```sh
+# 当前系统/电池/输入功率全景
+macli battery | jq '{instantPowerWatts, batteryPower, systemPower, inputPower, chargerPower: .charger.powerWatts}'
+
+# 判断是否在“慢充”或“不充电”
+macli battery | jq '{externalConnected, isCharging, fullyCharged, notChargingReason: .charger.notChargingReason, slowChargingReason: .charger.slowChargingReason}'
+
+# 估算从当前电量到满电需要多少 Wh
+macli battery | jq '{remainingWh: (.estimatedFullChargeWh - .currentWh), estimatedFullChargeWh, currentWh}'
+```
+
+### 3. 电芯平衡与内阻
+
+```sh
+# 电芯电压差
+macli battery | jq '{cellVoltages, cellVoltageDelta}'
+
+# 电压差大于 0.05 V 时高亮
+macli battery | jq -e '.cellVoltageDelta > 0.05' && echo "电芯不平衡，建议校准或检查"
+
+# 查看加权内阻（mΩ）
+macli battery | jq '{weightedRa, chemicalWeightedRa, resScale, rss, iss}'
+
+# 把 raTableRaw 画成每个电芯的电阻表
+macli battery | jq '.raTableRaw | to_entries[] | {cell: .key, table: .value}'
+```
+
+### 4. 适配器与 USB-C PD
+
+```sh
+# 当前适配器能力
+macli battery | jq '.adapter | {watts, voltage, current, description, isWireless}'
+
+# PDO 档位（适配器支持的电压/电流组合）
+macli battery | jq '.adapter.usbHvcMenu'
+
+# 每个 USB-C 口接了什么设备
+macli battery | jq '.fedDetails | map({vendorID, productID, externalConnected, remainingCapacity})'
+```
+
+### 5. 时间序列与监控
+
+```sh
+# 每隔 5 秒记录一条 CSV
+while true; do
+  macli battery | jq -r '[now, .stateOfCharge, .temperature, .instantPowerWatts, .cellVoltageDelta] | @csv'
+  sleep 5
+done >> battery.csv
+
+# 用 macli monitor 流式监控电池功率（每秒一个样本，共 60 个）
+macli monitor --metric battery_power --interval 1 --count 60
+
+# 计算过去 N 次采样的平均功耗
+macli monitor --metric battery_power --interval 1 --count 60 | awk -F'\t' 'NR>1 {sum+=$2; n++} END {print "avg:", sum/n, "W"}'
+```
+
+### 6. 可疑电池 / 身份核对
+
+```sh
+# 两个序列号是否一致
+macli battery | jq '{serialNumber, batterySerial, same: (.serialNumber == .batterySerial)}'
+
+# 制造商数据里的 ASCII 片段
+macli battery | jq '{mfgDataAscii, manufacturerDataAscii, deviceName, manufactureDate}'
+
+# 一次性输出所有可用于判断电池是否原生的字段
+macli battery | jq '{serialNumber, batterySerial, deviceName, manufactureDate, cycleCount, designCycleCount, mfgDataAscii}'
+```
+
+---
+
+## 二进制字段解析说明
+
+`ioreg` 里有些字段是 `NSData` blob，`macli battery` 对它们做了不同处理：
+
+| 字段 | 原始 IOKit 键 | macli 处理方式 | 说明 |
+|---|---|---|---|
+| `raTableRaw` | `BatteryData.RaTableRaw` | 解析为每电芯 `uint16` 数组 | 电量计内阻表，字节序为 big-endian |
+| `batteryState` / `batteryStateBytes` | `BatteryData.BatteryState` | hex 字符串 + uint8 数组 | gas gauge 扩展状态字节 |
+| `mfgData` / `mfgDataAscii` | `BatteryData.MfgData` | hex 字符串 + 可打印 ASCII | 制造商原始数据，常含产线代码 |
+| `manufacturerData` / `manufacturerDataAscii` | `AppleSmartBattery.ManufacturerData` | hex 字符串 + 可打印 ASCII | 顶层制造商数据 |
+| `charger.status` / `charger.statusBytes` | `ChargerData.ChargerStatus` | hex 字符串 + uint8 数组 | 充电器 IC 状态 |
+| `iMaxAndSocSmoothTable` | `BatteryData.iMaxAndSocSmoothTable` | hex 字符串 | 电流-电量平滑表，通常全 0 |
+| — | `LifetimeData.Raw` / `TimeAtHighSoc` | 跳过 | Apple 电量计私有生命周期日志，无公开格式 |
+| — | `PortControllerEvtBuffer` | 跳过 | USB-PD 控制器原始事件 buffer，无公开格式 |
+
+### 关于 `BatteryState` 和 `ChargerStatus` 的 bit 含义
+
+SBS（Smart Battery System）规范定义了标准寄存器：
+
+- `BatteryStatus(0x16)`：2 字节，包含 `DISCHARGING`、`FULLY_CHARGED`、`TERMINATE_CHARGE_ALARM` 等标志。
+- `ChargingStatus(0x55)`：2 字节，包含 `FCHG`、`PULSEOFF` 等标志。
+
+但 Apple 在 `BatteryData.BatteryState` 里放的是**扩展状态 blob**（常见 16~17 字节），`ChargerData.ChargerStatus` 新版本也是 `NSData`。前两个字节可能对应 SBS 标志，其余字节布局未公开。`macli battery` 只负责把它们以 hex/bytes 形式暴露出来，**不推测未验证的 bit 语义**。
+
+### 关于 `RaTableRaw`
+
+每个电芯的内阻表是 32 字节，按 big-endian `uint16` 解析成 16 个整数。这些值与 `ra00`–`ra14` 一起描述了电池在不同 SOC/温度点的内阻特征。跨机型、跨化学 ID 的具体映射由电量计算法决定，macli 只提供原始整数表，不发明物理含义。
+
+---
+
 ## 字段速查表
 
 ### 状态
@@ -122,6 +268,7 @@ macli battery | jq '.adapter | {voltage, adapterVoltage}'
 | `healthPercent` | % | `maxCapacity / designCapacity * 100` |
 | `designWh` | Wh | 设计能量 |
 | `currentWh` | Wh | 当前剩余能量 |
+| `estimatedFullChargeWh` | Wh | 按当前电压与 `maxCapacity` 估算的满电能量 |
 
 ### 电压 / 电流
 
@@ -130,6 +277,7 @@ macli battery | jq '.adapter | {voltage, adapterVoltage}'
 | `voltage` | mV | 电池包电压 |
 | `amperage` | mA | 平均电流 |
 | `instantAmperage` | mA | 瞬时电流 |
+| `instantPowerWatts` | W | `voltage * instantAmperage / 1e6` |
 | `appleRawBatteryVoltage` | mV | 原始电池电压 |
 | `bootVoltage` | mV | 启动时电压 |
 
@@ -168,18 +316,22 @@ macli battery | jq '.adapter | {voltage, adapterVoltage}'
 | `deviceName` | 电量计芯片型号，如 `bq40z651` |
 | `manufactureDate` | 出厂日期码（芯片原生格式） |
 | `manufacturerData` | hex | 制造商原始数据 |
+| `manufacturerDataAscii` | string | `ManufacturerData` 中可打印的 ASCII 片段 |
 
 ### 电芯数据
 
 | 字段 | 单位 | 说明 |
 |---|---|---|
 | `cellVoltages` | V | 每个电芯电压 |
+| `cellVoltageDelta` | V | 最高电芯电压 - 最低电芯电压 |
 | `qmax` | mAh | 每个电芯最大化学容量 |
 | `cellWom` | - | cell wake-on-motion 标志 |
 | `presentDOD` | - | 当前放电深度 |
 | `dod0` | - | 初始 DOD 校准值 |
 | `weightedRa` | mΩ | 加权内阻 |
 | `cellCurrentAccumulator` | - | 电芯电流累积器 |
+| `raTableRaw` | [uint16] | 每电芯内阻表（已从 `RaTableRaw` 解码） |
+| `iMaxAndSocSmoothTable` | hex | 电流-电量平滑表（通常全 0） |
 
 ### 电池数据诊断
 
@@ -206,7 +358,9 @@ macli battery | jq '.adapter | {voltage, adapterVoltage}'
 | `dateOfFirstUse` | 首次使用日期码 |
 | `gaugeCycleCount` | gas gauge 计循环数 |
 | `batteryState` | hex | gas gauge 状态字节 |
+| `batteryStateBytes` | [uint8] | `BatteryState` 的 uint8 数组 |
 | `mfgData` | hex | 制造商数据 |
+| `mfgDataAscii` | string | `MfgData` 中可打印的 ASCII 片段 |
 
 ### 适配器
 
@@ -233,7 +387,9 @@ macli battery | jq '.adapter | {voltage, adapterVoltage}'
 |---|---|
 | `charger.voltage` | 当前充电电压（mV） |
 | `charger.current` | 当前充电电流限制（mA） |
+| `charger.powerWatts` | W | `charger.voltage * charger.current / 1e6` |
 | `charger.status` | hex | 充电器状态字节 |
+| `charger.statusBytes` | [uint8] | `ChargerStatus` 的 uint8 数组 |
 | `charger.vacVoltageLimit` | VAC 电压限制 |
 | `charger.notChargingReason` | 不充电原因码 |
 | `charger.slowChargingReason` | 慢充原因码 |
@@ -341,6 +497,16 @@ macli battery --tsv > battery.tsv
 | `currentSenseMonitorStatus` | `BatteryData.CurrentSenseMonitorStatus` | 电流采样监控状态 |
 | `dod0AtQualifiedQmax` | `BatteryData.Dod0AtQualifiedQmax` | Qmax 合格时的 DOD0 |
 | `ra00` ~ `ra14` | `BatteryData.Ra00` ~ `Ra14` | 各温度点内阻表（mΩ） |
+| `raTableRaw` | `BatteryData.RaTableRaw` | 每电芯内阻表原始字节解码为 uint16 数组 |
+| `iMaxAndSocSmoothTable` | `BatteryData.iMaxAndSocSmoothTable` | 电流-电量平滑表（hex） |
+| `batteryStateBytes` | `BatteryData.BatteryState` | gas gauge 状态字节数组 |
+| `mfgDataAscii` | `BatteryData.MfgData` | 制造商数据中的可打印 ASCII |
+| `manufacturerDataAscii` | `AppleSmartBattery.ManufacturerData` | 顶层制造商数据 ASCII |
+| `cellVoltageDelta` | `BatteryData.CellVoltage` | 电芯最大最小电压差 |
+| `estimatedFullChargeWh` | `Voltage` × `AppleRawMaxCapacity` | 估算满电能量 |
+| `instantPowerWatts` | `Voltage` × `InstantAmperage` | 瞬时功率 |
+| `charger.powerWatts` | `ChargerData.ChargingVoltage` × `ChargingCurrent` | 当前充电功率 |
+| `charger.statusBytes` | `ChargerData.ChargerStatus` | 充电器状态字节数组 |
 | `batteryDataSystemPower` | `BatteryData.SystemPower` | gas gauge 原始系统功率 |
 | `batteryDataAdapterPower` | `BatteryData.AdapterPower` | gas gauge 原始适配器功率 |
 
@@ -360,11 +526,10 @@ macli battery --tsv > battery.tsv
 以下字段是 IO 元数据或大块二进制 blob，macli 故意不输出：
 
 - `IOGeneralInterest`、`IOObjectClass`、`IORegistryEntryID` 等 IO 元数据
-- `BatteryData.RaTableRaw`、`BatteryData.iMaxAndSocSmoothTable`、`BatteryData.MfgData`（已在 `mfgData` 输出 hex）
-- `BatteryData.BatteryState`（已在 `batteryState` 输出 hex）
-- `ChargerData.ChargerStatus`（已在 `charger.status` 输出 hex）
-- `LifetimeData.Raw`、`LifetimeData.TimeAtHighSoc` 等二进制时间序列
-- `PortControllerInfo` 里的 `PortControllerEvtBuffer` 等大块原始 buffer
+- `LifetimeData.Raw`、`LifetimeData.TimeAtHighSoc` 等二进制时间序列（Apple 电量计私有格式）
+- `PortControllerInfo` 里的 `PortControllerEvtBuffer` 等大块原始 buffer（USB-PD 控制器私有格式）
+
+其余二进制字段（`BatteryState`、`ChargerStatus`、`MfgData`、`ManufacturerData`、`RaTableRaw`、`iMaxAndSocSmoothTable`）已以 hex 或结构化形式输出。
 
 ---
 

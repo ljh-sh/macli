@@ -231,10 +231,15 @@ Key fields:
 | `serialNumber` | string | System-level battery serial |
 | `batterySerial` | string | Gas-gauge battery serial |
 | `adapter` | object | Adapter details (`watts`, `current`, `adapterVoltage`, ...) |
-| `charger` | object | Charger details (`voltage`, `current`, `notChargingReason`, ...) |
+| `charger` | object | Charger details (`voltage`, `current`, `powerWatts`, `notChargingReason`, ...) |
 | `systemPower` | number | System power draw in W |
+| `instantPowerWatts` | number | Instant battery power in W |
+| `cellVoltageDelta` | number | Max - min cell voltage in V |
+| `raTableRaw` | [[int]] | Per-cell resistance table decoded from binary |
+| `batteryStateBytes` | [int] | Gas-gauge status bytes |
+| `mfgDataAscii` | string | Printable ASCII extracted from `MfgData` |
 
-The full field reference — including `BatteryData`, `PowerTelemetryData`, `FedDetails`, `PortControllerInfo`, `LifetimeData`, and why `serialNumber`/`batterySerial` may differ — is in [`battery.md`](./battery.md).
+The full field reference, diagnostics cookbook, binary blob decoding notes, and why `serialNumber`/`batterySerial` may differ — is in [`battery.md`](./battery.md).
 
 <div class="note" markdown="1">
 
