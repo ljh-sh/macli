@@ -139,6 +139,9 @@
     NSNumber *batteryInstalled = [self numberAtPath:@[@"BatteryInstalled"] inSnapshot:snapshot];
     if (batteryInstalled) info[@"batteryInstalled"] = batteryInstalled;
 
+    NSNumber *batteryCellDisconnectCount = [self numberAtPath:@[@"BatteryCellDisconnectCount"] inSnapshot:snapshot];
+    if (batteryCellDisconnectCount) info[@"batteryCellDisconnectCount"] = batteryCellDisconnectCount;
+
     NSNumber *atCriticalLevel = [self numberAtPath:@[@"AtCriticalLevel"] inSnapshot:snapshot];
     if (atCriticalLevel) info[@"atCriticalLevel"] = atCriticalLevel;
 
@@ -180,6 +183,35 @@
 
     NSNumber *bestAdapterIndex = [self numberAtPath:@[@"BestAdapterIndex"] inSnapshot:snapshot];
     if (bestAdapterIndex) info[@"bestAdapterIndex"] = bestAdapterIndex;
+
+    NSNumber *skipperNEIgnoreAtCritical = [self numberAtPath:@[@"SkipperNEIgnoreAtCritical"] inSnapshot:snapshot];
+    if (skipperNEIgnoreAtCritical) info[@"skipperNEIgnoreAtCritical"] = skipperNEIgnoreAtCritical;
+
+    NSNumber *maxCapacityPercent = [self numberAtPath:@[@"MaxCapacity"] inSnapshot:snapshot];
+    if (maxCapacityPercent) info[@"maxCapacityPercent"] = maxCapacityPercent;
+
+    NSNumber *chargerConfiguration = [self numberAtPath:@[@"ChargerConfiguration"] inSnapshot:snapshot];
+    if (chargerConfiguration) info[@"chargerConfiguration"] = chargerConfiguration;
+
+    NSDictionary *carrierMode = [self valueAtPath:@[@"CarrierMode"] inSnapshot:snapshot];
+    if ([carrierMode isKindOfClass:[NSDictionary class]] && carrierMode.count > 0) {
+        info[@"carrierMode"] = [self jsonFriendlyValue:carrierMode];
+    }
+
+    NSDictionary *deadBatteryBootData = [self valueAtPath:@[@"DeadBatteryBootData"] inSnapshot:snapshot];
+    if ([deadBatteryBootData isKindOfClass:[NSDictionary class]] && deadBatteryBootData.count > 0) {
+        info[@"deadBatteryBootData"] = [self jsonFriendlyValue:deadBatteryBootData];
+    }
+
+    NSDictionary *ocvData = [self valueAtPath:@[@"OCVData"] inSnapshot:snapshot];
+    if ([ocvData isKindOfClass:[NSDictionary class]]) {
+        info[@"ocvData"] = [self jsonFriendlyValue:ocvData];
+    }
+
+    NSDictionary *lpeMData = [self valueAtPath:@[@"LPEMData"] inSnapshot:snapshot];
+    if ([lpeMData isKindOfClass:[NSDictionary class]]) {
+        info[@"lpemData"] = [self jsonFriendlyValue:lpeMData];
+    }
 
     // MARK: - Capacities (mAh)
     NSNumber *designCapacity = [self numberAtPath:@[@"DesignCapacity"] inSnapshot:snapshot];
@@ -331,6 +363,30 @@
 
         NSNumber *batteryHealthMetric = [self numberAtPath:@[@"BatteryHealthMetric"] inSnapshot:batteryData];
         if (batteryHealthMetric) info[@"batteryHealthMetric"] = batteryHealthMetric;
+
+        NSNumber *batteryRsenseOpenCount = [self numberAtPath:@[@"BatteryRsenseOpenCount"] inSnapshot:batteryData];
+        if (batteryRsenseOpenCount) info[@"batteryRsenseOpenCount"] = batteryRsenseOpenCount;
+
+        NSNumber *cellCurrentAccumulatorCount = [self numberAtPath:@[@"CellCurrentAccumulatorCount"] inSnapshot:batteryData];
+        if (cellCurrentAccumulatorCount) info[@"cellCurrentAccumulatorCount"] = cellCurrentAccumulatorCount;
+
+        NSNumber *currentSenseMonitorStatus = [self numberAtPath:@[@"CurrentSenseMonitorStatus"] inSnapshot:batteryData];
+        if (currentSenseMonitorStatus) info[@"currentSenseMonitorStatus"] = currentSenseMonitorStatus;
+
+        NSNumber *dod0AtQualifiedQmax = [self numberAtPath:@[@"Dod0AtQualifiedQmax"] inSnapshot:batteryData];
+        if (dod0AtQualifiedQmax) info[@"dod0AtQualifiedQmax"] = dod0AtQualifiedQmax;
+
+        for (int i = 0; i <= 14; i++) {
+            NSString *raKey = [NSString stringWithFormat:@"Ra%02d", i];
+            NSNumber *ra = [self numberAtPath:@[raKey] inSnapshot:batteryData];
+            if (ra) info[[raKey lowercaseString]] = ra;
+        }
+
+        NSNumber *batteryDataSystemPower = [self numberAtPath:@[@"SystemPower"] inSnapshot:batteryData];
+        if (batteryDataSystemPower) info[@"batteryDataSystemPower"] = batteryDataSystemPower;
+
+        NSNumber *batteryDataAdapterPower = [self numberAtPath:@[@"AdapterPower"] inSnapshot:batteryData];
+        if (batteryDataAdapterPower) info[@"batteryDataAdapterPower"] = batteryDataAdapterPower;
 
         NSNumber *chemicalWeightedRa = [self numberAtPath:@[@"ChemicalWeightedRa"] inSnapshot:batteryData];
         if (chemicalWeightedRa) info[@"chemicalWeightedRa"] = chemicalWeightedRa;

@@ -322,6 +322,52 @@ macli battery --tsv > battery.tsv
 
 ---
 
+## 补充字段（进一步覆盖 ioreg）
+
+以下字段是为了让 `macli battery` 成为 `ioreg` 的超集而补充的：
+
+| 字段 | 来源 | 说明 |
+|---|---|---|
+| `batteryCellDisconnectCount` | `BatteryCellDisconnectCount` | 电芯断开次数 |
+| `skipperNEIgnoreAtCritical` | `SkipperNEIgnoreAtCritical` | 临界电量忽略标志 |
+| `maxCapacityPercent` | `MaxCapacity` | 系统层最大容量百分比（常为 100） |
+| `chargerConfiguration` | `ChargerConfiguration` | 充电器配置值 |
+| `carrierMode` | `CarrierMode` | 载体模式参数（低/高电压阈值、状态） |
+| `deadBatteryBootData` | `DeadBatteryBootData` | 没电时启动记录的 payload |
+| `ocvData` | `OCVData` | 开路电压数据（通常为空） |
+| `lpemData` | `LPEMData` | LPEM 数据（通常为空） |
+| `batteryRsenseOpenCount` | `BatteryData.BatteryRsenseOpenCount` | 电流采样电阻开路计数 |
+| `cellCurrentAccumulatorCount` | `BatteryData.CellCurrentAccumulatorCount` | 电芯电流累积计数 |
+| `currentSenseMonitorStatus` | `BatteryData.CurrentSenseMonitorStatus` | 电流采样监控状态 |
+| `dod0AtQualifiedQmax` | `BatteryData.Dod0AtQualifiedQmax` | Qmax 合格时的 DOD0 |
+| `ra00` ~ `ra14` | `BatteryData.Ra00` ~ `Ra14` | 各温度点内阻表（mΩ） |
+| `batteryDataSystemPower` | `BatteryData.SystemPower` | gas gauge 原始系统功率 |
+| `batteryDataAdapterPower` | `BatteryData.AdapterPower` | gas gauge 原始适配器功率 |
+
+### 故意不重复输出的字段
+
+以下字段在 ioreg 里同时出现在根级和 `BatteryData` 里，macli 已经在根级输出，所以不再在 `BatteryData` 下重复：
+
+| ioreg 键 | macli 已输出为 |
+|---|---|
+| `BatteryData.DesignCapacity` | `designCapacity` |
+| `BatteryData.MaxCapacity` | `maxCapacityPercent` |
+| `BatteryData.Voltage` | `voltage` |
+| `BatteryData.CycleCount` | `gaugeCycleCount`（同时根级有 `cycleCount`） |
+
+### 跳过的字段
+
+以下字段是 IO 元数据或大块二进制 blob，macli 故意不输出：
+
+- `IOGeneralInterest`、`IOObjectClass`、`IORegistryEntryID` 等 IO 元数据
+- `BatteryData.RaTableRaw`、`BatteryData.iMaxAndSocSmoothTable`、`BatteryData.MfgData`（已在 `mfgData` 输出 hex）
+- `BatteryData.BatteryState`（已在 `batteryState` 输出 hex）
+- `ChargerData.ChargerStatus`（已在 `charger.status` 输出 hex）
+- `LifetimeData.Raw`、`LifetimeData.TimeAtHighSoc` 等二进制时间序列
+- `PortControllerInfo` 里的 `PortControllerEvtBuffer` 等大块原始 buffer
+
+---
+
 ## 常见问题
 
 **Q：输出字段这么多，是不是 bug？**
