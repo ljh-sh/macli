@@ -52,7 +52,11 @@ let snapshot: [String: Any] = [
         "CycleCount": 70,
         "Voltage": 13214,
         "MaxCapacity": 100,
+        "RaTableRaw": [Data([0x00, 0xdd, 0x00, 0x24]), Data([0x00, 0xc3, 0x00, 0x23])],
+        "BatteryState": Data([0x00, 0x01, 0x02, 0x03]),
+        "MfgData": Data([0x04, 0x33, 0x35, 0x31, 0x34]),
     ],
+    "ManufacturerData": Data([0x03, 0x41, 0x54, 0x4c]),
     "AdapterDetails": [
         "Watts": 60,
         "Voltage": 20000,
@@ -67,7 +71,8 @@ let snapshot: [String: Any] = [
     ],
     "ChargerData": [
         "ChargingVoltage": 4457,
-        "ChargingCurrent": 0,
+        "ChargingCurrent": 1000,
+        "ChargerStatus": Data([0xaa, 0xbb]),
     ],
 ]
 
@@ -122,7 +127,21 @@ eq("adapter.description", adapter?["description"] as? String, "pd charger")
 
 let charger = info["charger"] as? [String: Any]
 eq("charger.voltage", charger?["voltage"] as? Int, 4457)
-eq("charger.current", charger?["current"] as? Int, 0)
+eq("charger.current", charger?["current"] as? Int, 1000)
+approx("charger.powerWatts", charger?["powerWatts"] as? Double, 4457.0 * 1000.0 / 1000000.0)
+eq("charger.statusBytes", charger?["statusBytes"] as? [Int], [0xaa, 0xbb])
+
+approx("cellVoltageDelta", info["cellVoltageDelta"] as? Double, 0.004)
+approx("estimatedFullChargeWh", info["estimatedFullChargeWh"] as? Double, 13214.0 * 6214.0 / 1000000.0)
+approx("instantPowerWatts", info["instantPowerWatts"] as? Double, 13214.0 * 50.0 / 1000000.0)
+
+let raTableRaw = info["raTableRaw"] as? [[Int]]
+eq("raTableRaw count", raTableRaw?.count, 2)
+eq("raTableRaw[0]", raTableRaw?[0], [221, 36])
+eq("raTableRaw[1]", raTableRaw?[1], [195, 35])
+eq("batteryStateBytes", info["batteryStateBytes"] as? [Int], [0, 1, 2, 3])
+eq("mfgDataAscii", info["mfgDataAscii"] as? String, "3514")
+eq("manufacturerDataAscii", info["manufacturerDataAscii"] as? String, "ATL")
 
 let empty = BatteryClient.parseBatteryInfo(fromSnapshot: [:])
 eq("empty present", empty["present"] as? Bool, true)

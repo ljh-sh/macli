@@ -26,7 +26,7 @@ Docs: [ljh-sh.github.io/macli](https://ljh-sh.github.io/macli)
 Minimal context with maximum flexibility — paste this one-line prompt into Claude Code, Cursor, or any agent's system prompt:
 
 ```md
-Use `macli` for macOS system state (sensors / calendar / reminders). Install if missing: `brew install ljh-sh/cli/macli`. JSON output, check `ok`. Run `macli --help` for subcommands.
+Use `macli` for macOS system state (sensors / battery / calendar / reminders). Install if missing: `brew install ljh-sh/cli/macli`. JSON output, check `ok`. Run `macli --help` for subcommands.
 ```
 
 ## Install
@@ -126,18 +126,86 @@ Sample output:
 }
 ```
 
-### Battery & SSD health
+## Battery & power diagnostics
 
-macli also exposes battery and SSD info as standalone commands, both JSON/TSV friendly:
+`macli battery` reads `IOKit`/`AppleSmartBattery` and returns the richest,
+script-friendly battery snapshot on macOS. It is a strict superset of
+`ioreg -n AppleSmartBattery -r` for useful data: 150+ fields, per-cell voltages,
+USB-C PD telemetry, and decoded binary blobs like the per-cell resistance table
+`RaTableRaw`.
+
+### Highlights
+
+- **JSON / TSV / raw plist** — pipe into `jq`, `awk`, spreadsheets, or time-series DBs.
+- **Derived power metrics** — `healthPercent`, `designWh`, `currentWh`,
+  `estimatedFullChargeWh`, `instantPowerWatts`, `cellVoltageDelta`,
+  `charger.powerWatts`.
+- **Decoded binary fields** — `raTableRaw` (per-cell `uint16` resistance tables),
+  `batteryStateBytes`, `charger.statusBytes`, `mfgDataAscii`.
+- **Per-port USB-C PD diagnostics** — `fedDetails`, `portControllerInfo`,
+  `adapter.usbHvcMenu` PDOs.
+- **Battery identity cross-check** — compare `serialNumber` vs `batterySerial`,
+  inspect `manufactureDate` and manufacturer data.
+
+### At a glance
 
 ```sh
-macli battery             # cycle count, capacity, health %, temperature
-macli battery --tsv       # tab-separated for spreadsheets/awk
-macli battery --plist     # full raw AppleSmartBattery IORegistry snapshot
-macli ssd                 # NVMe model, serial, SMART status, TRIM, volumes
+macli battery                               # full JSON snapshot
+macli battery --tsv                         # spreadsheet / awk friendly
+macli battery --plist                       # raw AppleSmartBattery plist
+
+# Core health and status
+macli battery | jq '{status, stateOfCharge, healthPercent, cycleCount, temperature}'
+
+# Power flow right now
+macli battery | jq '{instantPowerWatts, batteryPower, systemPower, inputPower, charger: .charger.powerWatts}'
+
+# Per-cell balance (delta > 0.05 V warrants attention)
+macli battery | jq '{cellVoltages, cellVoltageDelta}'
+
+# Adapter PDOs and per-port PD partners
+macli battery | jq '{adapter: .adapter.usbHvcMenu, fedDetails}'
 ```
 
-`macli battery` reads from IOKit (`AppleSmartBattery`).
+### Diagnostics & scripting cookbook
+
+```sh
+# 1. Alert when health drops below 80%
+macli battery | jq -e '.healthPercent < 80' && echo "consider replacement"
+
+# 2. One-line battery report for remote support
+macli battery | jq -r '"\(.deviceName) \(.cycleCount) cycles health=\(.healthPercent)% temp=\(.temperature)°C"'
+
+# 3. Detect possible third-party / mismatched battery
+macli battery | jq '{serialNumber, batterySerial, same: (.serialNumber == .batterySerial)}'
+
+# 4. Log a time-series line every minute (CSV-ish)
+macli battery | jq -r '[now, .stateOfCharge, .healthPercent, .temperature, .instantPowerWatts] | @tsv' >> battery.tsv
+
+# 5. Compare current charge power to adapter rating
+macli battery | jq '{inputPower: .inputPower, chargerPower: .charger.powerWatts, systemPower: .systemPower}'
+
+# 6. Inspect decoded manufacturer ASCII inside the binary MfgData blob
+macli battery | jq -r '.mfgDataAscii // "N/A"'
+
+# 7. Stream battery power to awk / InfluxDB / Prometheus
+macli monitor --metric battery_power --interval 1 --count 60
+
+# 8. Find the hottest cell and the coldest cell
+macli battery | jq -r '.cellVoltages | "max=\(max), min=\(min), delta=\(max - min)"'
+
+# 9. Pretty-print the full resistance table for each cell
+macli battery | jq '.raTableRaw'
+
+# 10. Check if AC is connected but the battery is not charging (and why)
+macli battery | jq '{externalConnected, isCharging, fullyCharged, notChargingReason: .charger.notChargingReason}'
+```
+
+`macli battery` is **read-only** — it observes and reports, but does not control charging. To set charge limits or pause charging, use **System Settings → Battery → Battery Health** (official), or third-party tools like `batt` (Apple Silicon) / `bclm` (Intel). See [`docs/battery.md`](docs/battery.md) for the full guide and trade-offs.
+
+---
+
+### SSD health
 
 `macli ssd` parses `system_profiler SPNVMeDataType`. It returns model, serial,
 capacity, SMART status, TRIM support and volumes. It does **not** parse detailed
@@ -156,19 +224,6 @@ SSD compatibility:
 | Apple Silicon internal SSD | ✅ | Use `smartctl` |
 | External Thunderbolt NVMe | ✅ | Use `smartctl` |
 | USB/SATA adapters | May appear as storage, not NVMe | Use `smartctl` |
-
-Scripting examples:
-
-```sh
-# Alert when battery health drops below 80%
-macli battery | jq -e '.healthPercent < 80' && echo "consider replacement"
-
-# Log cycle count and temperature to a file
-macli battery --tsv | awk -F'\t' '/^cycleCount|^temperature/{print strftime("%Y-%m-%dT%H:%M:%S"), $1, $2}' >> battery.log
-
-# Monitor system + battery power draw in real time
-macli monitor --metric battery_power --interval 1
-```
 
 ### Display & GPU
 
