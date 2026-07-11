@@ -47,7 +47,10 @@ Use `macli` for macOS system state (sensors / calendar / reminders). Install if 
 
 - [Install macli]({{ '/install' | relative_url }}) — Homebrew, direct binary, eget, or build from source
 - [Command reference]({{ '/subcommands' | relative_url }}) — every subcommand, option, and output field
+- [Battery field reference]({{ '/battery' | relative_url }}) — complete `macli battery` fields and diagnostic scripts
 - [Design & principles]({{ '/design' | relative_url }}) — why macli is shaped the way it is
+- [Design principles]({{ '/design-principles' | relative_url }}) — the five core principles
 - [Why macli?]({{ '/why' | relative_url }}) — why a CLI instead of a shell/Python/AppleScript
 - [FAQ]({{ '/faq' | relative_url }}) — common questions about permissions, output formats, and usage
 - [Alternatives]({{ '/alternatives' | relative_url }}) — how macli compares to iStats, iSMC, stats, and others
+- [Verifying releases]({{ '/verifying-releases' | relative_url }}) — cosign signatures and SLSA provenance

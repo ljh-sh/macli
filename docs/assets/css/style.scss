@@ -70,6 +70,26 @@ body {
 
 .site-nav a:hover { color: var(--accent); }
 
+.lang-switch {
+  width: 100%;
+  text-align: right;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.lang-switch a {
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+}
+
+.lang-switch a:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
 main.container { padding: 2.5rem 1.25rem; }
 
 .page-content h1, .page-content h2, .page-content h3, .page-content h4 {
