@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ page.lang | default: 'en' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,14 +13,32 @@
     <div class="container">
       <a class="site-title" href="{{ '/' | relative_url }}">{{ site.title }}</a>
       <nav class="site-nav">
+        {% if page.lang == 'zh' %}
+        <a href="{{ '/zh/install' | relative_url }}">安装</a>
+        <a href="{{ '/zh/subcommands' | relative_url }}">命令</a>
+        <a href="{{ '/zh/battery' | relative_url }}">电池</a>
+        <a href="{{ '/zh/design' | relative_url }}">设计</a>
+        <a href="{{ '/zh/why' | relative_url }}">为什么</a>
+        <a href="{{ '/zh/faq' | relative_url }}">常见问题</a>
+        <a href="{{ '/zh/alternatives' | relative_url }}">替代方案</a>
+        {% else %}
         <a href="{{ '/install' | relative_url }}">Install</a>
         <a href="{{ '/subcommands' | relative_url }}">Commands</a>
+        <a href="{{ '/battery' | relative_url }}">Battery</a>
         <a href="{{ '/design' | relative_url }}">Design</a>
         <a href="{{ '/why' | relative_url }}">Why</a>
         <a href="{{ '/faq' | relative_url }}">FAQ</a>
         <a href="{{ '/alternatives' | relative_url }}">Alternatives</a>
+        {% endif %}
         <a href="https://github.com/ljh-sh/macli" target="_blank" rel="noopener">GitHub</a>
       </nav>
+      <div class="lang-switch">
+        {% if page.lang == 'zh' %}
+        <a href="{{ page.url | replace: '/zh/', '/' | relative_url }}">English</a>
+        {% else %}
+        <a href="{{ '/zh' | append: page.url | relative_url }}">中文</a>
+        {% endif %}
+      </div>
     </div>
   </header>
 
@@ -32,7 +50,17 @@
 
   <footer class="site-footer">
     <div class="container">
-      <p>macli is open source under <a href="https://github.com/ljh-sh/macli/blob/main/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a>.</p>
+      <p>
+        {% if page.lang == 'zh' %}
+        <a href="{{ '/zh/design-principles' | relative_url }}">设计原则</a> ·
+        <a href="{{ '/zh/verifying-releases' | relative_url }}">验证发布</a> ·
+        macli 在 <a href="https://github.com/ljh-sh/macli/blob/main/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a> 下开源。
+        {% else %}
+        <a href="{{ '/design-principles' | relative_url }}">Design principles</a> ·
+        <a href="{{ '/verifying-releases' | relative_url }}">Verifying releases</a> ·
+        macli is open source under <a href="https://github.com/ljh-sh/macli/blob/main/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a>.
+        {% endif %}
+      </p>
     </div>
   </footer>
 </body>
