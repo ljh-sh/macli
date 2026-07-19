@@ -2,7 +2,7 @@
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/ljh-sh/macli/badge)](https://scorecard.dev/)
 [![CI](https://github.com/ljh-sh/macli/actions/workflows/ci.yml/badge.svg)](https://github.com/ljh-sh/macli/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/badge/Docs-website-blue.svg)](https://ljh-sh.github.io/macli)
+[![Docs](https://img.shields.io/badge/Docs-website-blue.svg)](https://macli.ljh.sh)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.txt)
 
 > Minimal context with maximum flexibility — macOS system tools for AI agents. Native Apple frameworks. AI-friendly JSON/TSV output.
@@ -19,7 +19,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
 Mirrors: [github.com/ljh-sh/macli](https://github.com/ljh-sh/macli) · [codeberg.org/ljh-sh/macli](https://codeberg.org/ljh-sh/macli)
 
-Docs: [ljh-sh.github.io/macli](https://ljh-sh.github.io/macli)
+Docs: [macli.ljh.sh](https://macli.ljh.sh)
 
 ## For AI agents
 
@@ -310,7 +310,7 @@ Use cases: dashboards, CI notifiers ("next event in 5 min"), reminder batching, 
 
 ## FAQ
 
-The full FAQ lives on the docs site: [ljh-sh.github.io/macli/faq](https://ljh-sh.github.io/macli/faq).  
+The full FAQ lives on the docs site: [macli.ljh.sh/faq](https://macli.ljh.sh/faq).  
 Source: [`docs/faq.md`](docs/faq.md).
 
 ## FAQ about Installation & permissions
@@ -444,7 +444,7 @@ exact environment and `BUILD_INFO.txt` in each release for build parameters.
 
 ## Support
 
-- Read the [docs](https://ljh-sh.github.io/macli).
+- Read the [docs](https://macli.ljh.sh).
 - Open a [discussion](https://github.com/ljh-sh/macli/discussions) for questions.
 - Open an [issue](https://github.com/ljh-sh/macli/issues) for bugs or feature requests.
 

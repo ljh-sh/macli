@@ -1,7 +1,7 @@
 title: macli
 description: Lightweight macOS system tools CLI for sensors, display, GPU, calendar, reminders, and shell pipelines.
-baseurl: "/macli"
-url: "https://ljh-sh.github.io"
+baseurl: ""
+url: "https://macli.ljh.sh"
 
 permalink: pretty
 
